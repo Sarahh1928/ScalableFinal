@@ -8,8 +8,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user_db
       - SPRING_DATASOURCE_USERNAME=user
       - SPRING_DATASOURCE_PASSWORD=password
+      - REDIS_HOST=redis_cache
     depends_on:
       - user-db
+      - redis_cache
 
   user-db:
     image: postgres
@@ -49,10 +51,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://order-db:5432/order_db
       - SPRING_DATASOURCE_USERNAME=order
       - SPRING_DATASOURCE_PASSWORD=password
-      - REDIS_HOST=order-cache
+      - REDIS_HOST=order_cache
     depends_on:
       - order-db
-      - order-cache
+      - redis_cache
 
   order-db:
     image: postgres
@@ -61,8 +63,19 @@ services:
       - POSTGRES_USER=order
       - POSTGRES_PASSWORD=password
 
-  order-cache:
-    image: redis
+  redis_cache:
+    image: redis:latest
+    container_name: redisCache
+    ports:
+      - "6379:6379"
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisInsight
+    ports:
+      - "5540:5540"
+    restart: always
+
 
   payment-service:
     build: ./paymentService

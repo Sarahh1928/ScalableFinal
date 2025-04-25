@@ -1,4 +1,5 @@
 package com.ecommerce.UserService.models.enums;
 
-public class UserRole {
+public enum UserRole {
+    CUSTOMER, MERCHANT, ADMIN
 }
