@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.*;
 
+import java.util.List;
+
 @Entity
 @Table(name = "products")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -35,6 +37,17 @@ public abstract class Product {
     @Enumerated(EnumType.STRING)
     private ProductCategory category;
     private Long merchantId;
+    @ElementCollection
+    private List<String> sizeList;  // New field for sizes
+
+    // Getters and setters
+    public List<String> getSizeList() {
+        return sizeList;
+    }
+
+    public void setSizeList(List<String> sizeList) {
+        this.sizeList = sizeList;
+    }
 
     // Getters and Setters
 
