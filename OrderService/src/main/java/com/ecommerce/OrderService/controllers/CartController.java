@@ -1,6 +1,5 @@
 package com.ecommerce.OrderService.controllers;
 
-import com.ecommerce.OrderService.Clients.UserServiceFeignClient;
 import com.ecommerce.OrderService.Dto.UserSessionDTO;
 import com.ecommerce.OrderService.models.Cart;
 import com.ecommerce.OrderService.services.CartService;
@@ -8,14 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/carts")
 public class CartController {
 
     @Autowired
     private CartService cartService;
-    @Autowired
-    private UserServiceFeignClient userServiceFeignClient;
 
     private static final String USER_SESSION_CACHE_PREFIX = "user_session::";
 
@@ -52,10 +51,16 @@ public class CartController {
 
     // Remove item from cart (using JWT token in header)
     @DeleteMapping("/remove/{productId}")
-    public ResponseEntity<String> removeItemFromCart(@RequestHeader("Authorization") String token, @PathVariable Long productId) {
-        cartService.removeItemFromCart(extractToken(token), productId);
+    public ResponseEntity<String> removeItemFromCart(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long productId,
+            @RequestBody(required = false) Integer quantity) {
+
+        cartService.removeItemFromCart(extractToken(token), productId, quantity);
         return ResponseEntity.ok("Item removed from cart");
     }
+
+
 
     // Clear cart (using JWT token in header)
     @DeleteMapping("/clear")

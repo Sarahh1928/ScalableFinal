@@ -5,6 +5,8 @@ public class ProductResponseDTO {
     private String name;
     private int stock;
     private double price;
+    private Long merchantId;
+
 
 
     // Getters and setters (boilerplate, you can generate)
@@ -38,5 +40,24 @@ public class ProductResponseDTO {
 
     public void setStock(int stock) {
         this.stock = stock;
+    }
+
+    public Long getMerchantId() {
+        return merchantId;
+    }
+
+    public void setMerchantId(Long merchantId) {
+        this.merchantId = merchantId;
+    }
+
+    @Override
+    public String toString() {
+        return "ProductResponseDTO{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", stock=" + stock +
+                ", price=" + price +
+                ", merchantId=" + merchantId +
+                '}';
     }
 }

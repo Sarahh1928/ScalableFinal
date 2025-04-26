@@ -1,63 +1,90 @@
 package com.ecommerce.OrderService.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Cart {
 
-    private String token;   // JWT Token for the session
-    private Long userId;    // User ID associated with the cart
-    private Map<Long, CartItem> items;  // A map where the key is the product ID and the value is the CartItem
+    private String token;
+    private Long userId;
+    private Map<Long, CartItem> items;
+    private double totalPrice;
+    private int totalItemCount;
 
-    public Cart() {
-    }
-    // Constructor to initialize the cart with token and userId
+
+    public Cart() {}
+
     public Cart(String token, Long userId) {
         this.token = token;
         this.userId = userId;
         this.items = new HashMap<>();
+        this.totalPrice = 0.0;
+        this.totalItemCount = 0;
     }
 
     // Add item to cart
-    public void addItem(Long productId, int quantity, double price) {
+    public void addItem(Long productId, int quantity, double price, Long merchantId) {
         CartItem cartItem = items.get(productId);
         if (cartItem != null) {
-            cartItem.setQuantity(cartItem.getQuantity() + quantity); // If the item exists, just update the quantity
+            // Update existing item
+            int oldQuantity = cartItem.getQuantity();
+            cartItem.setQuantity(oldQuantity + quantity);
+
+            // Update totals
+            totalItemCount += quantity;
+            totalPrice += quantity * price;
         } else {
-            items.put(productId, new CartItem(productId, quantity,price)); // Otherwise, create a new CartItem
+            // Add new item
+            CartItem newItem = new CartItem(productId, quantity, price, merchantId);
+            items.put(productId, newItem);
+
+            // Update totals
+            totalItemCount += quantity;
+            totalPrice += quantity * price;
         }
     }
 
     // Remove item from cart
     public void removeItem(Long productId) {
-        items.remove(productId);
-    }
+        CartItem cartItem = items.remove(productId);
+        if (cartItem != null) {
+            int quantity = cartItem.getQuantity();
+            double price = cartItem.getPrice();
 
-    // Get list of all items in the cart
-    public Map<Long, CartItem> getItems() {
-        return items;
+            // Update totals
+            totalItemCount -= quantity;
+            totalPrice -= quantity * price;
+        }
     }
 
     // Clear all items in the cart
     public void clear() {
         items.clear();
-    }
-
-    // Get the total number of items in the cart
-    public int getTotalItemCount() {
-        return items.values().stream().mapToInt(CartItem::getQuantity).sum();
-    }
-
-    // Get the total price of items in the cart (you would need to integrate with product data)
-    public double getTotalPrice() {
-        double totalPrice = 0.0;
-        for (CartItem item : items.values()) {
-            // Example: totalPrice += item.getQuantity() * productPrice(item.getProductId());
-        }
-        return totalPrice;
+        totalItemCount = 0;
+        totalPrice = 0.0;
     }
 
     // Getters and Setters
+    public Map<Long, CartItem> getItems() {
+        return items;
+    }
+
+    public void setItems(Map<Long, CartItem> items) {
+        this.items = items;
+        recalculateTotals(); // recalc when you manually set items
+    }
+
+    public int getTotalItemCount() {
+        return totalItemCount;
+    }
+
+    public double getTotalPrice() {
+        return totalPrice;
+    }
+
     public String getToken() {
         return token;
     }
@@ -74,9 +101,13 @@ public class Cart {
         this.userId = userId;
     }
 
-    public void setItems(Map<Long, CartItem> items) {
-        this.items = items;
+    // private helper to recalculate from scratch (in case someone manually sets items map)
+    public void recalculateTotals() {
+        totalItemCount = 0;
+        totalPrice = 0.0;
+        for (CartItem item : items.values()) {
+            totalItemCount += item.getQuantity();
+            totalPrice += item.getQuantity() * item.getPrice();
+        }
     }
-
-    // Optional: Override toString(), equals(), hashCode() methods if needed
 }
