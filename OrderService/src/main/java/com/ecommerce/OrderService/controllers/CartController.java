@@ -1,16 +1,12 @@
 package com.ecommerce.OrderService.controllers;
 
 import com.ecommerce.OrderService.Clients.UserServiceFeignClient;
+import com.ecommerce.OrderService.Dto.UserSessionDTO;
 import com.ecommerce.OrderService.models.Cart;
-import com.ecommerce.OrderService.models.CartItem;
-import com.ecommerce.OrderService.models.UserSession;
 import com.ecommerce.OrderService.services.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/carts")
@@ -31,7 +27,7 @@ public class CartController {
     }
 
     @GetMapping("/get")
-    public UserSession getSession(@RequestHeader("Authorization") String token) {
+    public UserSessionDTO getSession(@RequestHeader("Authorization") String token) {
         return cartService.getSession(extractToken(token));
     }
 
