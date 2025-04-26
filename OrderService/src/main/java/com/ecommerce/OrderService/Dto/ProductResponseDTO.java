@@ -1,4 +1,4 @@
-package com.ecommerce.OrderService.DTO;
+package com.ecommerce.OrderService.Dto;
 
 public class ProductResponseDTO {
     private Long id;
@@ -11,9 +11,11 @@ public class ProductResponseDTO {
     public double getPrice() {
         return price;
     }
-    public double setPrice(double price) {
+
+    public void setPrice(double price) {
         this.price = price;
     }
+
     public Long getId() {
         return id;
     }

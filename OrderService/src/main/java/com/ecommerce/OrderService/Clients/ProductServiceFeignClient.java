@@ -1,9 +1,7 @@
 package com.ecommerce.OrderService.Clients;
 
-import com.ecommerce.OrderService.DTO.ProductResponseDTO;
-import com.ecommerce.OrderService.models.UserSession;
+import com.ecommerce.OrderService.Dto.ProductResponseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 

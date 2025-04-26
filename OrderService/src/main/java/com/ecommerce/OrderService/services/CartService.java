@@ -1,8 +1,8 @@
 package com.ecommerce.OrderService.services;
 
 import com.ecommerce.OrderService.Clients.ProductServiceFeignClient;
+import com.ecommerce.OrderService.Dto.UserSessionDTO;
 import com.ecommerce.OrderService.models.Cart;
-import com.ecommerce.OrderService.models.UserSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -13,19 +13,19 @@ import java.util.Objects;
 public class CartService {
 
     private final RedisTemplate<String, Cart> cartRedisTemplate;
-    private final RedisTemplate<String, UserSession> sessionRedisTemplate;
+    private final RedisTemplate<String, UserSessionDTO> sessionRedisTemplate;
     private final ProductServiceFeignClient productServiceFeignClient;
 
     @Autowired
     public CartService(RedisTemplate<String, Cart> cartRedisTemplate,
-                       RedisTemplate<String, UserSession> sessionRedisTemplate, ProductServiceFeignClient productServiceFeignClient) {
+                       RedisTemplate<String, UserSessionDTO> sessionRedisTemplate, ProductServiceFeignClient productServiceFeignClient) {
         this.cartRedisTemplate = cartRedisTemplate;
         this.sessionRedisTemplate = sessionRedisTemplate;
         this.productServiceFeignClient = productServiceFeignClient;
     }
 
-    public UserSession getSession(String token) {
-        UserSession session = sessionRedisTemplate.opsForValue().get(token);
+    public UserSessionDTO getSession(String token) {
+        UserSessionDTO session = sessionRedisTemplate.opsForValue().get(token);
         if (session == null) {
             throw new RuntimeException("Session not found in cache for token: " + token);
         }

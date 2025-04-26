@@ -1,6 +1,5 @@
 package com.ecommerce.OrderService.Clients;
 
-import com.ecommerce.OrderService.models.UserSession;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

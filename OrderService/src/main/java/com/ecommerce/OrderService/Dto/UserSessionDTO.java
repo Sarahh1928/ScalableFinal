@@ -1,14 +1,15 @@
-package com.ecommerce.OrderService.models;
+package com.ecommerce.OrderService.Dto;
 
-public class UserSession {
+public class UserSessionDTO {
     private String token;
     private Long userId;
     private String role;
 
-    // Constructor
-    public UserSession() {}
+    // No-arg constructor
+    public UserSessionDTO() {}
 
-    public UserSession(String token, Long userId, String role) {
+    // All-arg constructor
+    public UserSessionDTO(String token, Long userId, String role) {
         this.token = token;
         this.userId = userId;
         this.role = role;

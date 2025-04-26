@@ -1,7 +1,7 @@
 package com.ecommerce.OrderService.Config;
 
+import com.ecommerce.OrderService.Dto.UserSessionDTO;
 import com.ecommerce.OrderService.models.Cart;
-import com.ecommerce.OrderService.models.UserSession;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -24,12 +24,12 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, UserSession> userSessionRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String, UserSession> template = new RedisTemplate<>();
+    public RedisTemplate<String, UserSessionDTO> UserSessionDTORedisTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, UserSessionDTO> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
 
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new Jackson2JsonRedisSerializer<>(UserSession.class));
+        template.setValueSerializer(new Jackson2JsonRedisSerializer<>(UserSessionDTO.class));
 
         return template;
     }
