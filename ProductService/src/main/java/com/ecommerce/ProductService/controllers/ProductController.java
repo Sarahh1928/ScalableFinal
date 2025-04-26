@@ -72,4 +72,11 @@ public class ProductController {
     public double getAverageRating(@PathVariable Long productId) {
         return productService.getAverageRating(productId);
     }
+    @PutMapping("/{id}/stock")
+    public Product updateStock(
+            @PathVariable Long id,
+            @RequestParam int stock) {
+        Product product = productService.updateStock(id, stock);
+        return product;
+    }
 }
