@@ -51,9 +51,13 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://order-db:5432/order_db
       - SPRING_DATASOURCE_USERNAME=order
       - SPRING_DATASOURCE_PASSWORD=password
-      - REDIS_HOST=order_cache
+      - REDIS_HOST_ORDER_CACHE=orderCache  # Reference to the order_cache service
+      - REDIS_PORT_ORDER_CACHE=6379  # Default Redis port for order_cache
+      - REDIS_HOST_REDIS_CACHE=redisCache  # Reference to the redis_cache service
+      - REDIS_PORT_REDIS_CACHE=6379  # Default Redis port for redis_cache
     depends_on:
       - order-db
+      - order_cache
       - redis_cache
 
   order-db:
@@ -63,11 +67,17 @@ services:
       - POSTGRES_USER=order
       - POSTGRES_PASSWORD=password
 
+  order_cache:
+    image: redis:latest
+    container_name: orderCache
+    ports:
+      - "6380:6379"  # External port 6380 mapped to internal Redis port 6379
+
   redis_cache:
     image: redis:latest
     container_name: redisCache
     ports:
-      - "6379:6379"
+      - "6381:6379"  # External port 6381 mapped to internal Redis port 6379
 
   redisinsight:
     image: redis/redisinsight:latest

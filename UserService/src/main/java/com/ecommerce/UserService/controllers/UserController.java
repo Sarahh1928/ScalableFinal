@@ -1,6 +1,8 @@
 package com.ecommerce.UserService.controllers;
 
+import com.ecommerce.UserService.authUtilities.JwtUtil;
 import com.ecommerce.UserService.models.User;
+import com.ecommerce.UserService.models.UserSession;
 import com.ecommerce.UserService.models.enums.UserRole;
 import com.ecommerce.UserService.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     // Helper method to extract the token from the Authorization header
     private String extractToken(String authorizationHeader) {
@@ -58,6 +63,28 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error logging out: " + e.getMessage());
         }
     }
+
+    @GetMapping("/session")
+    public ResponseEntity<UserSession> getSessionFromToken(@RequestHeader("Authorization") String token) {
+        try {
+            String actualToken = extractToken(token);
+
+            if (actualToken == null || !userService.isTokenValid(actualToken)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);  // Invalid or expired token
+            }
+
+            UserSession session = userService.getSessionByToken(actualToken);
+
+            if (session != null) {
+                return ResponseEntity.ok(session);  // Return userId if valid
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);  // Token is valid but userId is not found
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);  // Handle other errors
+        }
+    }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUser(@PathVariable Long id, @RequestHeader("Authorization") String authorizationHeader) {
