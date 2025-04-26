@@ -9,6 +9,8 @@ public class Cart {
     private Long userId;    // User ID associated with the cart
     private Map<Long, CartItem> items;  // A map where the key is the product ID and the value is the CartItem
 
+    public Cart() {
+    }
     // Constructor to initialize the cart with token and userId
     public Cart(String token, Long userId) {
         this.token = token;
@@ -17,12 +19,12 @@ public class Cart {
     }
 
     // Add item to cart
-    public void addItem(Long productId, int quantity) {
+    public void addItem(Long productId, int quantity, double price) {
         CartItem cartItem = items.get(productId);
         if (cartItem != null) {
             cartItem.setQuantity(cartItem.getQuantity() + quantity); // If the item exists, just update the quantity
         } else {
-            items.put(productId, new CartItem(productId, quantity)); // Otherwise, create a new CartItem
+            items.put(productId, new CartItem(productId, quantity,price)); // Otherwise, create a new CartItem
         }
     }
 

@@ -153,13 +153,11 @@ public class UserService {
             User user = userOpt.get();
             // Validate password
             if (passwordEncoder.matches(password, user.getPassword())) {
-                // Check if the user already has an active session by token
-                String redisKey = "user_session:" + user.getId();
+
                 if (!user.getRole().equalsIgnoreCase("ADMIN")&&!user.isEmailVerified()) {
                     throw new RuntimeException("Please verify your email before logging in.");
                 }
-                UserSession existingSession = redisTemplate.opsForValue().get(redisKey);
-
+                UserSession existingSession = SessionManager.getInstance().getSessionByUserId(user.getId());
                 // If there's an existing session, prevent login
                 if (existingSession != null) {
                     throw new RuntimeException("User is already logged in.");

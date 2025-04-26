@@ -9,6 +9,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -23,10 +24,14 @@ public class RedisConfig {
         RedisTemplate<String, UserSession> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
 
-        // Set up the key and value serializers for RedisTemplate
+        // Use Jackson2JsonRedisSerializer for the value
         Jackson2JsonRedisSerializer<UserSession> serializer = new Jackson2JsonRedisSerializer<>(UserSession.class);
+
+        // Set the key serializer to StringRedisSerializer since keys are typically strings
+        template.setKeySerializer(new StringRedisSerializer());
+
+        // Set value serializer to Jackson2JsonRedisSerializer for UserSession objects
         template.setValueSerializer(serializer);
-        template.setKeySerializer(new Jackson2JsonRedisSerializer<>(String.class));
 
         return template;
     }
