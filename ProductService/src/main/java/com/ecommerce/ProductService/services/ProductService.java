@@ -21,8 +21,9 @@ public class ProductService {
 
     private final ProductSubject subject = new ProductSubject();
 
-    public ProductService() {
-        subject.registerObserver(new StockAlertObserver());
+    @Autowired
+    public ProductService(StockAlertObserver observer) {
+        subject.registerObserver(observer);
     }
 
     public Product createProduct(Product input) {
@@ -111,4 +112,14 @@ public class ProductService {
                 .average()
                 .orElse(0.0);
     }
+    public Product updateStock(Long id, int stock) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        product.setStock(stock);
+        Product updatedProduct = productRepository.save(product); // Triggers the observer
+        subject.notifyObservers(updatedProduct);
+        System.out.println("Product stock updated: " + updatedProduct.getName() + " with stock " + updatedProduct.getStock());
+        return updatedProduct; // Return the updated product
+    }
+
 }
