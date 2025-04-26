@@ -1,9 +1,13 @@
 package com.ecommerce.OrderService.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.Embeddable;
 
+import java.io.Serializable;
+
+@Embeddable
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CartItem {
+public class CartItem implements Serializable {
 
     private Long productId;
     private int quantity;
@@ -44,6 +48,14 @@ public class CartItem {
 
     public void setPrice(double price) {
         this.price = price;
+    }
+
+    public Long getMerchantId() {
+        return merchantId;
+    }
+
+    public void setMerchantId(Long merchantId) {
+        this.merchantId = merchantId;
     }
 
     // You could also add a helper to get total price for this item
