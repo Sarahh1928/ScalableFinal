@@ -1,21 +1,24 @@
 package com.ecommerce.OrderService.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CartItem {
 
     private Long productId;
     private int quantity;
-    private double price; // 👈 finally the price exists, as it SHOULD
+    private double price;
+    private Long merchantId;
+
+    public CartItem() {
+    }
 
     // Constructor
-    public CartItem(Long productId, int quantity, double price) {
+    public CartItem(Long productId, int quantity, double price, Long merchantId) {
         this.productId = productId;
         this.quantity = quantity;
         this.price = price;
-    }
-
-    // Overloaded Constructor if you want backward compatibility (optional)
-    public CartItem(Long productId, int quantity) {
-        this(productId, quantity, 0.0);
+        this.merchantId = merchantId;
     }
 
     // Getters and Setters

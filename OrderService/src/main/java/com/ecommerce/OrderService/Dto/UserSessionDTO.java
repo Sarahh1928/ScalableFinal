@@ -1,5 +1,8 @@
 package com.ecommerce.OrderService.Dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserSessionDTO {
     private String token;
     private Long userId;
