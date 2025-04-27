@@ -29,9 +29,11 @@ services:
       - SPRING_DATASOURCE_USERNAME=product
       - SPRING_DATASOURCE_PASSWORD=password
       - MONGODB_URI=mongodb://product-review-db:27017/product_reviews
+      - REDIS_HOST=redis_cache
     depends_on:
       - product-db
       - product-review-db
+      - redis_cache
 
   product-db:
     image: postgres

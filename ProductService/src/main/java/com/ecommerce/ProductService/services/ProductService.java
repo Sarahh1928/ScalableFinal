@@ -1,5 +1,6 @@
 package com.ecommerce.ProductService.services;
 
+import com.ecommerce.ProductService.Dto.UserSessionDTO;
 import com.ecommerce.ProductService.models.Product;
 import com.ecommerce.ProductService.models.ProductReview;
 import com.ecommerce.ProductService.repositories.ProductRepository;
@@ -8,6 +9,8 @@ import com.ecommerce.ProductService.services.factory.ProductFactory;
 import com.ecommerce.ProductService.services.observer.ProductSubject;
 import com.ecommerce.ProductService.services.observer.StockAlertObserver;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,9 +24,19 @@ public class ProductService {
 
     private final ProductSubject subject = new ProductSubject();
 
+    private final RedisTemplate<String, UserSessionDTO> sessionRedisTemplate;
+
+
     @Autowired
-    public ProductService(StockAlertObserver observer) {
+    public ProductService(StockAlertObserver observer, RedisTemplate<String, UserSessionDTO> sessionRedisTemplate) {
+        this.sessionRedisTemplate = sessionRedisTemplate;
         subject.registerObserver(observer);
+    }
+
+    public String getToken(String token) {
+        UserSessionDTO userSession=sessionRedisTemplate.opsForValue().get(token);
+        assert userSession != null;
+        return userSession.toString();
     }
 
     public Product createProduct(Product input) {
@@ -74,6 +87,7 @@ public class ProductService {
     public Product getProductById(Long id) {
         return productRepository.findById(id).orElseThrow();
     }
+
     public ProductReview addReview(Long productId, ProductReview incomingReview) {
         if (!productRepository.existsById(productId)) {
             throw new IllegalArgumentException("Product not found with ID: " + productId);
@@ -103,6 +117,7 @@ public class ProductService {
     public List<ProductReview> getReviews(Long productId) {
         return productReviewRepository.findByProductId(productId);
     }
+
     public double getAverageRating(Long productId) {
         List<ProductReview> reviews = getReviews(productId);
         if (reviews.isEmpty()) return 0.0;
@@ -112,6 +127,7 @@ public class ProductService {
                 .average()
                 .orElse(0.0);
     }
+
     public Product updateStock(Long id, int stock) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
