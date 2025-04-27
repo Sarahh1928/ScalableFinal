@@ -1,4 +1,7 @@
 package com.ecommerce.OrderService.services.observer;
 
-public class OrderStatusObserver {
+import com.ecommerce.OrderService.models.Order;
+
+public interface OrderStatusObserver {
+    void update(Order order);
 }

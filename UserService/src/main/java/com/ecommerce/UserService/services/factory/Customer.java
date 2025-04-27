@@ -12,6 +12,7 @@ public class Customer {
         customer.setRole("CUSTOMER");
         customer.setShippingAddress(data.getShippingAddress());
         customer.setPhoneNumber(data.getPhoneNumber());
+        customer.setWallet(0.0);
         return customer;
     }
 }

@@ -58,13 +58,15 @@ public class CartService {
 
         UserSessionDTO session = getSession(token);
         Long userId = session.getUserId();
+        String email = session.getEmail();
         System.out.println("User Session: " + session);
 
         Cart cart = cartRedisTemplate.opsForValue().get(token);
         if (cart == null) {
             System.out.println("Cart not found for Token: " + token + ". Creating a new cart.");
-            cart = new Cart(token, userId);
+            cart = new Cart(token, userId, email);
         } else {
+            cart.setUserEmail(email);
             System.out.println("Found existing cart for Token: " + token);
         }
 
@@ -81,7 +83,7 @@ public class CartService {
         // Fetch the cart or create a new one if not present
         UserSessionDTO session = getSession(token);
         Cart cart = cartRedisTemplate.opsForValue().get(token);
-        return cart != null ? cart : new Cart(token, session.getUserId());
+        return cart != null ? cart : new Cart(token, session.getUserId(), session.getEmail());
     }
 
     public void removeItemFromCart(String token, Long productId, Integer quantity) {

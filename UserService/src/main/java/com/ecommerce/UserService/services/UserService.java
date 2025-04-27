@@ -167,7 +167,7 @@ public class UserService {
                 String token = jwtUtil.generateToken(user.getId(), user.getRole());
 
                 // Create UserSession object with the token, userId, and role
-                UserSession userSession = new UserSession(token, user.getId(), user.getRole());
+                UserSession userSession = new UserSession(token, user.getId(), user.getRole(), user.getEmail());
 
                 // Store the UserSession object in Redis (using token as the key)
                 redisTemplate.opsForValue().set(token, userSession);  // Store by token in Redis
