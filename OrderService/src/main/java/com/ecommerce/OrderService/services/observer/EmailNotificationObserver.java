@@ -2,12 +2,13 @@ package com.ecommerce.OrderService.services.observer;
 
 import com.ecommerce.OrderService.models.Order;
 import com.ecommerce.OrderService.services.EmailService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class EmailNotificationObserver implements OrderStatusObserver {
 
-    private final EmailService emailService; // you MUST have an EmailService
+    private final EmailService emailService;
 
     public EmailNotificationObserver(EmailService emailService) {
         this.emailService = emailService;
@@ -21,3 +22,4 @@ public class EmailNotificationObserver implements OrderStatusObserver {
         emailService.sendEmail(order.getUserEmail(), subject, message);
     }
 }
+

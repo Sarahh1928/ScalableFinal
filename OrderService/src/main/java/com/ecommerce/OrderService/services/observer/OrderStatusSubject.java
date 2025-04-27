@@ -8,18 +8,18 @@ import java.util.List;
 
 @Component
 public class OrderStatusSubject {
-    private final List<OrderStatusObserver> observers = new ArrayList<>();
+    private final List<EmailNotificationObserver> observers = new ArrayList<>();
 
-    public void addObserver(OrderStatusObserver observer) {
+    public void addObserver(EmailNotificationObserver observer) {
         observers.add(observer);
     }
 
-    public void removeObserver(OrderStatusObserver observer) {
+    public void removeObserver(EmailNotificationObserver observer) {
         observers.remove(observer);
     }
 
     public void notifyObservers(Order order) {
-        for (OrderStatusObserver observer : observers) {
+        for (EmailNotificationObserver observer : observers) {
             observer.update(order);
         }
     }
