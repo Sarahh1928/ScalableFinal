@@ -3,6 +3,8 @@ package com.ecommerce.ProductService.controllers;
 import com.ecommerce.ProductService.models.Product;
 import com.ecommerce.ProductService.models.ProductReview;
 import com.ecommerce.ProductService.services.ProductService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +19,12 @@ public class ProductController {
         this.productService = productService;
     }
 
+    private String extractToken(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);  // Remove "Bearer " prefix
+        }
+        return null;  // If the header doesn't contain a Bearer token, return null
+    }
     // 📌 Add a new product (Factory pattern used internally)
     @PostMapping
     public Product addProduct(@RequestBody Product product) {
@@ -27,6 +35,12 @@ public class ProductController {
     @GetMapping
     public List<Product> getAllProducts() {
         return productService.getAllProducts();
+    }
+
+    @GetMapping("/getToken")
+    public String logoutUser(@RequestHeader("Authorization") String token) {
+        String actualToken = extractToken(token);
+        return productService.getToken(actualToken);
     }
 
     // 📌 Filter by price range
@@ -68,10 +82,12 @@ public class ProductController {
     public List<ProductReview> getReviews(@PathVariable Long productId) {
         return productService.getReviews(productId);
     }
+
     @GetMapping("/{productId}/average-rating")
     public double getAverageRating(@PathVariable Long productId) {
         return productService.getAverageRating(productId);
     }
+
     @PutMapping("/{id}/stock")
     public Product updateStock(
             @PathVariable Long id,
