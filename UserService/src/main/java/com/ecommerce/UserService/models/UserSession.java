@@ -4,14 +4,16 @@ public class UserSession {
     private String token;
     private Long userId;
     private String role;
+    private String email;
 
     // Constructor
     public UserSession() {}
 
-    public UserSession(String token, Long userId, String role) {
+    public UserSession(String token, Long userId, String role, String email) {
         this.token = token;
         this.userId = userId;
         this.role = role;
+        this.email=email;
     }
 
     // Getters and Setters
@@ -37,5 +39,12 @@ public class UserSession {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

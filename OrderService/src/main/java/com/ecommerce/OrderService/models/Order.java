@@ -17,6 +17,8 @@ public class Order {
     @Column(nullable = false)
     private Long userId;
 
+    private String userEmail;
+
     @ElementCollection
     @CollectionTable(name = "order_cart_items", joinColumns = @JoinColumn(name = "order_id"))
     private List<CartItem> orderProducts;
@@ -92,6 +94,14 @@ public class Order {
 
     public void setTotalItemCount(int totalItemCount) {
         this.totalItemCount = totalItemCount;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
     }
 
     // Helper method to calculate the total price and item count based on order products

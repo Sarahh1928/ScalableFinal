@@ -7,6 +7,7 @@ public class UserSessionDTO {
     private String token;
     private Long userId;
     private String role;
+    private String email;
 
     // No-arg constructor
     public UserSessionDTO() {}
@@ -42,6 +43,13 @@ public class UserSessionDTO {
     public void setRole(String role) {
         this.role = role;
     }
+    public String getEmail() {
+        return email;
+    }
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
 
     @Override
     public String toString() {

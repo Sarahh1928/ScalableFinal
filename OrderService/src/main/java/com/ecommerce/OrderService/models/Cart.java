@@ -10,6 +10,7 @@ public class Cart {
 
     private String token;
     private Long userId;
+    private String email;
     private Map<Long, CartItem> items;
     private double totalPrice;
     private int totalItemCount;
@@ -17,9 +18,10 @@ public class Cart {
 
     public Cart() {}
 
-    public Cart(String token, Long userId) {
+    public Cart(String token, Long userId, String email) {
         this.token = token;
         this.userId = userId;
+        this.email = email;
         this.items = new HashMap<>();
         this.totalPrice = 0.0;
         this.totalItemCount = 0;
@@ -99,6 +101,22 @@ public class Cart {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getUserEmail() {
+        return email;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.email = userEmail;
+    }
+
+    public void setTotalPrice(double totalPrice) {
+        this.totalPrice = totalPrice;
+    }
+
+    public void setTotalItemCount(int totalItemCount) {
+        this.totalItemCount = totalItemCount;
     }
 
     // private helper to recalculate from scratch (in case someone manually sets items map)

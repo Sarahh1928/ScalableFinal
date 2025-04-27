@@ -8,6 +8,7 @@ import com.ecommerce.OrderService.models.Order;
 import com.ecommerce.OrderService.models.enums.OrderStatus;
 import com.ecommerce.OrderService.repositories.OrderRepository;
 import com.ecommerce.OrderService.services.command.*;
+import com.ecommerce.OrderService.services.observer.OrderStatusSubject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -21,16 +22,17 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final RedisTemplate<String, Cart> cartRedisTemplate;
     private final RedisTemplate<String, UserSessionDTO> sessionRedisTemplate;
-
+    private final OrderStatusSubject orderStatusSubject;
     // Constructor injection for dependencies
     @Autowired
     public OrderService(
             @Qualifier("cartRedisTemplate") RedisTemplate<String, Cart> cartRedisTemplate,
             @Qualifier("userSessionDTORedisTemplate") RedisTemplate<String, UserSessionDTO> sessionRedisTemplate,
-            OrderRepository orderRepository) {  // Injecting OrderRepository
+            OrderRepository orderRepository, OrderStatusSubject orderStatusSubject) {  // Injecting OrderRepository
         this.cartRedisTemplate = cartRedisTemplate;
         this.sessionRedisTemplate = sessionRedisTemplate;
         this.orderRepository = orderRepository;
+        this.orderStatusSubject = orderStatusSubject;
     }
 
     public UserSessionDTO getSession(String token) {
@@ -83,6 +85,7 @@ public class OrderService {
             order.setStatus(OrderStatus.CONFIRMED);  // Default status
             order.setTotalPrice(calculateTotalPrice(orderProducts));  // Calculate total price
             order.setTotalItemCount(orderProducts.size());  // Calculate total item count
+            order.setUserEmail(cart.getUserEmail());
 
             // Save order to the database (using OrderRepository)
             orderRepository.save(order);  // Save to DB
@@ -110,14 +113,24 @@ public class OrderService {
         Order existingOrder = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
 
-        // Update fields
+        boolean statusChanged = !existingOrder.getStatus().equals(updatedOrder.getStatus());
+
         existingOrder.setStatus(updatedOrder.getStatus());
         existingOrder.setOrderProducts(updatedOrder.getOrderProducts());
         existingOrder.setTotalPrice(updatedOrder.getTotalPrice());
         existingOrder.setTotalItemCount(updatedOrder.getTotalItemCount());
 
-        // Save the updated order to the database
-        return orderRepository.save(existingOrder);
+        Order savedOrder = orderRepository.save(existingOrder);
+
+        if (statusChanged) {
+            orderStatusSubject.notifyObservers(savedOrder); // 👈 Only notify if status actually changed
+        }
+
+        return savedOrder;
+    }
+
+    public void updateOrderStatus(Order order) {
+        orderStatusSubject.notifyObservers(order); // 👈 Only notify if status actually changed
     }
 
     // 3. Delete Order by ID
@@ -141,6 +154,7 @@ public class OrderService {
 
         OrderCommandExecutor executor = new OrderCommandExecutor(commands);
         executor.executeCommands();  // Execute the cancel command
+        updateOrderStatus(order);
     }
 
     // Method to refund an order
@@ -152,6 +166,7 @@ public class OrderService {
 
         OrderCommandExecutor executor = new OrderCommandExecutor(commands);
         executor.executeCommands();  // Execute the refund command
+        updateOrderStatus(order);
     }
 
     // Method to ship an order
@@ -163,6 +178,7 @@ public class OrderService {
 
         OrderCommandExecutor executor = new OrderCommandExecutor(commands);
         executor.executeCommands();  // Execute the ship command
+        updateOrderStatus(order);
     }
 
     public void deliverOrder(Long orderId) {
@@ -180,5 +196,8 @@ public class OrderService {
         // Create an executor to execute the commands
         OrderCommandExecutor executor = new OrderCommandExecutor(commands);
         executor.executeCommands();  // Execute the deliver order command
+        updateOrderStatus(order);
     }
+
+
 }

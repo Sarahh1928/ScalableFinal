@@ -8,9 +8,11 @@ import jakarta.persistence.Entity;
 public class CustomerProfile extends User {
     private String shippingAddress;
     private String phoneNumber;
+    private Double wallet;
 
     // Default constructor
     public CustomerProfile() {
+        this.wallet = 0.0;
         // You can use this if you need any specific initialization
     }
 
@@ -19,6 +21,7 @@ public class CustomerProfile extends User {
         super(username, email, password, "CUSTOMER"); // Call the constructor of the superclass (User)
         this.shippingAddress = shippingAddress;
         this.phoneNumber = phoneNumber;
+        this.wallet = 0.0;
     }
 
     // Getters and Setters
@@ -36,5 +39,13 @@ public class CustomerProfile extends User {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public double getWallet() {
+        return wallet;
+    }
+
+    public void setWallet(double wallet) {
+        this.wallet = wallet;
     }
 }
