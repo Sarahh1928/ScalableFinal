@@ -16,8 +16,8 @@ public class StockAlertObserver implements ProductObserver {
     @Override
     public void onProductUpdated(Product product) {
         System.out.println("Stock alert observer triggered for: " + product.getName());
-        if (product.getStock() < 5) {
-            mailService.sendStockAlert(alertEmail, product.getName(), product.getStock());
+        if (product.getStockLevel() < 5) {
+            mailService.sendStockAlert(alertEmail, product.getName(), product.getStockLevel());
         }
     }
 

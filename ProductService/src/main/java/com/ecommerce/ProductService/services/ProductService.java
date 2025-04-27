@@ -3,17 +3,20 @@ package com.ecommerce.ProductService.services;
 import com.ecommerce.ProductService.Dto.UserSessionDTO;
 import com.ecommerce.ProductService.models.Product;
 import com.ecommerce.ProductService.models.ProductReview;
+import com.ecommerce.ProductService.models.enums.ProductCategory;
 import com.ecommerce.ProductService.repositories.ProductRepository;
 import com.ecommerce.ProductService.repositories.ProductReviewRepository;
+import com.ecommerce.ProductService.models.Accessory;
+import com.ecommerce.ProductService.models.Clothing;
 import com.ecommerce.ProductService.services.factory.ProductFactory;
 import com.ecommerce.ProductService.services.observer.ProductSubject;
 import com.ecommerce.ProductService.services.observer.StockAlertObserver;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ProductService {
@@ -38,24 +41,51 @@ public class ProductService {
         assert userSession != null;
         return userSession.toString();
     }
+    public UserSessionDTO getUserSessionFromToken(String token) {
+        // Retrieve the user session from Redis using the provided token
+        UserSessionDTO userSession=sessionRedisTemplate.opsForValue().get(token);
 
-    public Product createProduct(Product input) {
-        // Create the appropriate product type
-        Product product = ProductFactory.createProduct(input.getCategory());
-
-        // Copy all properties from input to the new product
-        product.setName(input.getName());
-        product.setDescription(input.getDescription());
-        product.setPrice(input.getPrice());
-        product.setStock(input.getStock());
-        product.setCategory(input.getCategory());
-        product.setMerchantId(input.getMerchantId());
-
-        // Save and return
-        Product saved = productRepository.save(product);
-        subject.notifyObservers(saved);
-        return saved;
+        // Check if the session exists and if the user role is "merchant"
+        return userSession;
     }
+
+    public Product createProduct(ProductCategory category, Map<String, Object> input) {
+        try {
+            Product newProduct = ProductFactory.createProduct(category);
+
+            // Common attributes
+            newProduct.setName((String) input.get("name"));
+            newProduct.setPrice(Double.parseDouble(input.get("price").toString()));
+            newProduct.setBrand((String) input.get("brand"));
+            newProduct.setColor((String) input.get("color"));
+            newProduct.setMerchantId(Long.parseLong(input.get("merchantId").toString()));
+            newProduct.setStockLevel(Integer.parseInt(input.get("stockLevel").toString()));
+
+            // Specific attributes
+            if (newProduct instanceof Clothing) {
+                Clothing clothing = (Clothing) newProduct;
+                clothing.setDetails(
+                        (String) input.get("size"),
+                        (String) input.get("material"),
+                        (String) input.get("gender"),
+                        (String) input.get("season")
+                );
+            } else if (newProduct instanceof Accessory) {
+                Accessory accessory = (Accessory) newProduct;
+                accessory.setDetails(
+                        (String) input.get("type"),
+                        (String) input.get("material"),
+                        Boolean.parseBoolean(input.get("unisex").toString())
+                );
+            }
+
+             productRepository.save(newProduct);
+            return newProduct;
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating a new product from input: " + input, e);
+        }
+    }
+
 
 
     public List<Product> getAllProducts() {
@@ -66,18 +96,42 @@ public class ProductService {
         return productRepository.findByPriceBetween(min, max);
     }
 
-    public Product updateProduct(Long id, Product updated) {
-        Product product = productRepository.findById(id).orElseThrow();
-        product.setName(updated.getName());
-        product.setDescription(updated.getDescription());
-        product.setPrice(updated.getPrice());
-        product.setStock(updated.getStock());
-        product.setCategory(updated.getCategory());
-        product.setMerchantId(updated.getMerchantId());
+    public Product updateProduct(long uid, Product updatedProduct) {
+        Product existingProduct = productRepository.findById(uid)
+                .orElseThrow(() -> new RuntimeException("Product not found with UID: " + uid));
 
-        Product saved = productRepository.save(product);
-        subject.notifyObservers(saved);
-        return saved;
+        // Update common attributes
+        existingProduct.setCommonAttributes(
+                updatedProduct.getName(),
+                updatedProduct.getPrice(),
+                updatedProduct.getBrand(),
+                updatedProduct.getColor(),
+                updatedProduct.getMerchantId(),
+                updatedProduct.getStockLevel()
+        );
+
+        // Handle specific attributes for different product types
+        if (existingProduct instanceof Clothing && updatedProduct instanceof Clothing) {
+            Clothing clothing = (Clothing) existingProduct;
+            Clothing updatedClothing = (Clothing) updatedProduct;
+            clothing.setDetails(
+                    updatedClothing.getSize(),
+                    updatedClothing.getMaterial(),
+                    updatedClothing.getGender(),
+                    updatedClothing.getSeason()
+            );
+        } else if (existingProduct instanceof Accessory && updatedProduct instanceof Accessory) {
+            Accessory accessory = (Accessory) existingProduct;
+            Accessory updatedAccessory = (Accessory) updatedProduct;
+            accessory.setDetails(
+                    updatedAccessory.getType(),
+                    updatedAccessory.getMaterial(),
+                    updatedAccessory.isUnisex()
+            );
+        }
+
+        // Save the updated product to the repository (DB)
+        return productRepository.save(existingProduct);
     }
 
     public void deleteProduct(Long id) {
@@ -129,12 +183,21 @@ public class ProductService {
     }
 
     public Product updateStock(Long id, int stock) {
+        // Find the product by ID
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
-        product.setStock(stock);
-        Product updatedProduct = productRepository.save(product); // Triggers the observer
-        subject.notifyObservers(updatedProduct);
-        System.out.println("Product stock updated: " + updatedProduct.getName() + " with stock " + updatedProduct.getStock());
+
+        // Update the stock level
+        product.setStockLevel(stock);
+
+        // Save the updated product to the database
+        Product updatedProduct = productRepository.save(product);
+
+        // Notify observers (make sure subject is properly initialized)
+        if (subject != null) {
+            subject.notifyObservers(updatedProduct);
+        }
+
         return updatedProduct; // Return the updated product
     }
 

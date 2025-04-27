@@ -1,13 +1,12 @@
 package com.ecommerce.ProductService.models.enums;
 
+import com.ecommerce.ProductService.models.Accessory;
+import com.ecommerce.ProductService.models.Clothing;
 import com.ecommerce.ProductService.models.Product;
-import com.ecommerce.ProductService.services.factory.*;
 
 public enum ProductCategory {
-    TOP(TopProduct.class),
-    BOTTOM(BottomProduct.class),
-    ACCESSORIES(AccessoriesProduct.class),
-    SHOES(ShoesProduct.class);
+    CLOTHING(Clothing.class),
+    ACCESSORY(Accessory.class);
 
     private final Class<? extends Product> productClass;
 

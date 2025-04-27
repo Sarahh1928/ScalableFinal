@@ -1,89 +1,46 @@
 package com.ecommerce.ProductService.models;
 
-import com.ecommerce.ProductService.models.enums.ProductCategory;
-import com.ecommerce.ProductService.services.factory.*;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "products")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "dtype")
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "dtype"  // Match JPA discriminator column
-)
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = TopProduct.class, name = "TOP"),
-        @JsonSubTypes.Type(value = BottomProduct.class, name = "BOTTOM"),
-        @JsonSubTypes.Type(value = AccessoriesProduct.class, name = "ACCESSORIES"),
-        @JsonSubTypes.Type(value = ShoesProduct.class, name = "SHOES")
-})
-@DiscriminatorValue("PRODUCT")
-public abstract class Product {
+public class Product {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Generates the UID automatically
+    private long uid; // The unique identifier for each product
 
-    private String name;
-    private String description;
-    private double price;
-    private int stock;
+    protected String name;
+    protected double price;
+    protected String brand;
+    protected String color;
+    protected Long merchantId;
+    protected int stockLevel;
 
-    @Enumerated(EnumType.STRING)
-    private ProductCategory category;
-    private Long merchantId;
-
-    // Getters and Setters
-
-    public Long getId() {
-        return id;
+    public Product() {
+        // Empty constructor for reflection
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public long getUid() {
+        return uid;
     }
 
-    public String getName() {
-        return name;
+    public void setUid(long uid) {
+        this.uid = uid;
     }
 
-    public void setName(String name) {
+    // common setters
+    public void setCommonAttributes(String name, double price, String brand, String color, Long merchantId, int stockLevel) {
         this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-
-    public void setPrice(double price) {
         this.price = price;
-    }
-
-    public int getStock() {
-        return stock;
-    }
-
-    public void setStock(int stock) {
-        this.stock = stock;
-    }
-
-    public ProductCategory getCategory() {
-        return category;
-    }
-
-    public void setCategory(ProductCategory category) {
-        this.category = category;
+        this.brand = brand;
+        this.color = color;
+        this.merchantId = merchantId;
+        this.stockLevel = stockLevel;
     }
 
     public Long getMerchantId() {
@@ -94,4 +51,44 @@ public abstract class Product {
         this.merchantId = merchantId;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+
+    public int getStockLevel() {
+        return stockLevel;
+    }
+
+    public void setStockLevel(int stockLevel) {
+        this.stockLevel = stockLevel;
+    }
 }

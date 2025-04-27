@@ -1,4 +1,7 @@
 package com.ecommerce.PaymentService.models.enums;
 
-public class PaymentMethod {
+public enum PaymentMethod {
+    CREDIT_CARD,
+    PAYPAL,
+    APPLE_PAY
 }

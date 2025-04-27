@@ -1,4 +1,7 @@
 package com.ecommerce.PaymentService.services.strategy;
 
-public class PaymentStrategy {
+
+public interface PaymentStrategy {
+    boolean processPayment(double amount);
+    String getPaymentMethodName();
 }

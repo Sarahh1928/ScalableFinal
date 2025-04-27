@@ -1,13 +1,16 @@
 package com.ecommerce.ProductService.controllers;
 
+import com.ecommerce.ProductService.Dto.UserSessionDTO;
 import com.ecommerce.ProductService.models.Product;
 import com.ecommerce.ProductService.models.ProductReview;
+import com.ecommerce.ProductService.models.enums.ProductCategory;
 import com.ecommerce.ProductService.services.ProductService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/products")
@@ -19,6 +22,12 @@ public class ProductController {
         this.productService = productService;
     }
 
+    private boolean isMerchantUser(String token) {
+        // Assuming you decode the token to get user information
+        // You can implement this method to validate the user role from the token
+        UserSessionDTO userSession = productService.getUserSessionFromToken(token);  // You need to implement this method
+        return userSession != null && "MERCHANT".equalsIgnoreCase(userSession.getRole());
+    }
     private String extractToken(String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7);  // Remove "Bearer " prefix
@@ -27,8 +36,23 @@ public class ProductController {
     }
     // 📌 Add a new product (Factory pattern used internally)
     @PostMapping
-    public Product addProduct(@RequestBody Product product) {
-        return productService.createProduct(product);
+    public ResponseEntity<?> addProduct(
+            @RequestParam("category") ProductCategory category,
+            @RequestBody Map<String, Object> product,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        // Extract token from Authorization header
+        String token = extractToken(authorizationHeader);
+
+        // Get user session details from the token
+        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+        if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only merchants can add products."+userSession);
+        }
+
+        // Proceed to add product if the user is authorized
+        Product newProduct = productService.createProduct(category, product);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newProduct);
     }
 
     // 📌 Get all products
@@ -51,12 +75,23 @@ public class ProductController {
         return productService.filterProductsByPrice(min, max);
     }
 
+
     // 📌 Update product
     @PutMapping("/{id}")
-    public Product updateProduct(
+    public ResponseEntity<Product> updateProduct(
             @PathVariable Long id,
-            @RequestBody Product updatedProduct) {
-        return productService.updateProduct(id, updatedProduct);
+            @RequestBody Product updatedProduct,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        String token = extractToken(authorizationHeader);
+
+        if (token == null || !isMerchantUser(token)) {
+            // Return unauthorized response if the user is not a merchant
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
+
+        Product product = productService.updateProduct(id, updatedProduct);
+        return ResponseEntity.ok(product);
     }
 
     // 📌 Delete product
