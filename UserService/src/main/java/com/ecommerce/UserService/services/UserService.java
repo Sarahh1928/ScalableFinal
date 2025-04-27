@@ -1,6 +1,7 @@
 package com.ecommerce.UserService.services;
 
 import com.ecommerce.UserService.authUtilities.JwtUtil;
+import com.ecommerce.UserService.models.CustomerProfile;
 import com.ecommerce.UserService.models.PasswordResetToken;
 import com.ecommerce.UserService.models.UserSession;
 import com.ecommerce.UserService.repositories.PasswordResetTokenRepository;
@@ -304,5 +305,16 @@ public class UserService {
         userRepository.findById(currentSession.getUserId()).ifPresent(user -> {
             userRepository.delete(user);  // Delete the user from the database
         });
+    }
+
+    public void deposit(String token, Long userId, Double amount) {
+        CustomerProfile user = (CustomerProfile) userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        // 4. Process the deposit (add amount to the user's balance)
+        double newBalance = user.getWallet() + amount;
+        user.setWallet(newBalance);
+
+        userRepository.save(user);
     }
 }

@@ -35,6 +35,12 @@ public class UserController {
         return token != null && userService.isTokenValid(token);
     }
 
+    @PostMapping("/deposit/{userId}")
+    public ResponseEntity<User> deposit(String token, @PathVariable Long userId, @RequestBody Double amount) {
+        userService.deposit(extractToken(token), userId, amount);
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
     @PostMapping("/register")
     public ResponseEntity<User> register(@RequestParam("role") UserRole role, @RequestBody Object userData) {
         User user = userService.registerUser(role, userData);
