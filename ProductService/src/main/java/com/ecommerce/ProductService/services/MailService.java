@@ -17,6 +17,10 @@ public class MailService {
         this.javaMailSender = javaMailSender;
     }
     public void sendStockAlert(String toEmail, String productName, int stock) {
+        if (toEmail == null || toEmail.isEmpty()) {
+            throw new IllegalArgumentException("Recipient email must not be null or empty.");
+        }
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(toEmail);

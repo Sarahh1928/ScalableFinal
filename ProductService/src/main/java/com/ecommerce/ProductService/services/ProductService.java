@@ -96,10 +96,12 @@ public class ProductService {
         return productRepository.findByPriceBetween(min, max);
     }
 
-    public Product updateProduct(long uid, Product updatedProduct) {
+    public Product updateProduct(Long userId,String alertEmail,long uid, Product updatedProduct) {
         Product existingProduct = productRepository.findById(uid)
                 .orElseThrow(() -> new RuntimeException("Product not found with UID: " + uid));
-
+        if(existingProduct.getMerchantId()!=userId){
+            throw new RuntimeException("Only the owner of Product can update it");
+        }
         // Update common attributes
         existingProduct.setCommonAttributes(
                 updatedProduct.getName(),
@@ -129,12 +131,21 @@ public class ProductService {
                     updatedAccessory.isUnisex()
             );
         }
+        // Notify observers (make sure subject is properly initialized)
+        if (subject != null) {
+            subject.notifyObservers(alertEmail,updatedProduct);
+        }
+
 
         // Save the updated product to the repository (DB)
         return productRepository.save(existingProduct);
     }
 
-    public void deleteProduct(Long id) {
+    public void deleteProduct(Long userId,Long id) {
+        Product product=productRepository.findById(id).orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
+        if(product.getMerchantId()!=userId){
+            throw new RuntimeException("Only the owner of Product can delete it");
+        }
         productRepository.deleteById(id);
     }
 
@@ -182,7 +193,7 @@ public class ProductService {
                 .orElse(0.0);
     }
 
-    public Product updateStock(Long id, int stock) {
+    public Product updateStock(String alertEmail,Long id, int stock) {
         // Find the product by ID
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -195,7 +206,7 @@ public class ProductService {
 
         // Notify observers (make sure subject is properly initialized)
         if (subject != null) {
-            subject.notifyObservers(updatedProduct);
+            subject.notifyObservers(alertEmail,updatedProduct);
         }
 
         return updatedProduct; // Return the updated product
