@@ -11,11 +11,14 @@ public class StockAlertObserver implements ProductObserver {
     @Autowired
     private MailService mailService;
 
-    private final String alertEmail = "sarahmohamed1928@gmail.com"; // or dynamically fetched
-
     @Override
-    public void onProductUpdated(Product product) {
+    public void onProductUpdated(String alertEmail,Product product) {
         System.out.println("Stock alert observer triggered for: " + product.getName());
+
+        // Ensure alertEmail is not null or empty
+        if (alertEmail == null || alertEmail.isEmpty()) {
+            throw new IllegalArgumentException("Alert email must not be null or empty.");
+        }
         if (product.getStockLevel() < 5) {
             mailService.sendStockAlert(alertEmail, product.getName(), product.getStockLevel());
         }

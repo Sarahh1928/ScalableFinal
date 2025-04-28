@@ -82,22 +82,30 @@ public class ProductController {
             @PathVariable Long id,
             @RequestBody Product updatedProduct,
             @RequestHeader("Authorization") String authorizationHeader) {
-
         String token = extractToken(authorizationHeader);
 
-        if (token == null || !isMerchantUser(token)) {
-            // Return unauthorized response if the user is not a merchant
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        // Get user session details from the token
+        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+        if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
+            throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
         }
 
-        Product product = productService.updateProduct(id, updatedProduct);
+        Product product = productService.updateProduct(userSession.getUserId(),userSession.getEmail(),id, updatedProduct);
         return ResponseEntity.ok(product);
     }
 
     // 📌 Delete product
     @DeleteMapping("/{id}")
-    public void deleteProduct(@PathVariable Long id) {
-        productService.deleteProduct(id);
+    public void deleteProduct(@PathVariable Long id,
+                              @RequestHeader("Authorization") String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+
+        // Get user session details from the token
+        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+        if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
+            throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
+        }
+        productService.deleteProduct(userSession.getUserId(),id);
     }
 
     // 📌 Get product by ID
@@ -109,7 +117,16 @@ public class ProductController {
     @PostMapping("/{productId}/reviews")
     public ProductReview addReview(
             @PathVariable Long productId,
-            @RequestBody ProductReview review) {
+            @RequestBody ProductReview review,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        // Extract token from Authorization header
+        String token = extractToken(authorizationHeader);
+
+        // Get user session details from the token
+        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+        if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
+            throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
+        }
         return productService.addReview(productId, review);
     }
 
@@ -126,8 +143,16 @@ public class ProductController {
     @PutMapping("/{id}/stock")
     public Product updateStock(
             @PathVariable Long id,
-            @RequestParam int stock) {
-        Product product = productService.updateStock(id, stock);
+            @RequestParam int stock,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+
+        // Get user session details from the token
+        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+        if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
+            throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
+        }
+        Product product = productService.updateStock(userSession.getEmail(),id, stock);
         return product;
     }
 }

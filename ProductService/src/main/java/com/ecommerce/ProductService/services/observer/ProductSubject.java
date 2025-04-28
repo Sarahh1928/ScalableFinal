@@ -12,9 +12,9 @@ public class ProductSubject {
         observers.add(observer);
     }
 
-    public void notifyObservers(Product product) {
+    public void notifyObservers(String alertEmail,Product product) {
         for (ProductObserver observer : observers) {
-            observer.onProductUpdated(product);
+            observer.onProductUpdated(alertEmail,product);
         }
     }
 }
