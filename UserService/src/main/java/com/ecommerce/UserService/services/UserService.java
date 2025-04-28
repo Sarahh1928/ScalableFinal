@@ -1,320 +1,293 @@
 package com.ecommerce.UserService.services;
 
 import com.ecommerce.UserService.authUtilities.JwtUtil;
-import com.ecommerce.UserService.models.CustomerProfile;
-import com.ecommerce.UserService.models.PasswordResetToken;
-import com.ecommerce.UserService.models.UserSession;
+import com.ecommerce.UserService.models.*;
+import com.ecommerce.UserService.models.enums.UserRole;
 import com.ecommerce.UserService.repositories.PasswordResetTokenRepository;
 import com.ecommerce.UserService.repositories.UserRepository;
-import com.ecommerce.UserService.models.User;
-import com.ecommerce.UserService.models.enums.UserRole;
 import com.ecommerce.UserService.services.factory.UserFactory;
 import com.ecommerce.UserService.services.singleton.SessionManager;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired private UserFactory userFactory;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private JwtUtil jwtUtil;
+    @Autowired private RedisTemplate<String, UserSession> redisTemplate;
+    @Autowired private EmailService emailService;
 
-    @Autowired
-    private PasswordResetTokenRepository passwordResetTokenRepository;
+    // UTILITY
+    private UserSession getSessionOrThrow(String token) {
+        UserSession session = redisTemplate.opsForValue().get(token);
+        if (session == null) {
+            throw new IllegalStateException("Invalid session or user not logged in.");
+        }
+        return session;
+    }
 
-    @Autowired
-    private UserFactory userFactory;
+    private PasswordResetToken getValidPasswordResetToken(String token) {
+        return passwordResetTokenRepository.findByToken(token)
+                .filter(t -> t.getExpiryDate().isAfter(LocalDateTime.now()))
+                .orElseThrow(() -> new IllegalStateException("Invalid or expired password reset token."));
+    }
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;  // Inject PasswordEncoder
+    private User getUserOrThrow(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
+    }
 
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private RedisTemplate<String, UserSession> redisTemplate;
-
-    @Autowired
-    private EmailService emailService;
-
-    // Step 1: Request Password Reset (Generate Reset Token)
+    // PASSWORD RESET
     public void requestPasswordReset(String email) {
-        Optional<User> userOpt = userRepository.findByEmail(email);
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("No user found with the provided email."));
 
-            // Generate a unique reset token
-            String token = UUID.randomUUID().toString();
-            PasswordResetToken passwordResetToken = new PasswordResetToken();
-            passwordResetToken.setToken(token);
-            passwordResetToken.setUser(user);
-            passwordResetToken.setExpiryDate(LocalDateTime.now().plusHours(1)); // Token expires in 1 hour
-
-            // Save the token in the database
-            passwordResetTokenRepository.save(passwordResetToken);
-
-            // Send the token to the user's email
-            emailService.sendPasswordResetEmail(user.getEmail(), token);
-        } else {
-            throw new RuntimeException("No user found with the provided email.");
-        }
+        PasswordResetToken token = new PasswordResetToken(
+                UUID.randomUUID().toString(),
+                user,
+                LocalDateTime.now().plusHours(1)
+        );
+        passwordResetTokenRepository.save(token);
+        emailService.sendPasswordResetEmail(user.getEmail(), token.getToken());
     }
 
-    // Step 2: Validate Password Reset Token
     public boolean validatePasswordResetToken(String token) {
-        Optional<PasswordResetToken> passwordResetTokenOpt = passwordResetTokenRepository.findByToken(token);
-
-        if (passwordResetTokenOpt.isPresent()) {
-            PasswordResetToken passwordResetToken = passwordResetTokenOpt.get();
-
-            // Check if the token is expired
-            if (passwordResetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-                throw new RuntimeException("Reset token has expired.");
-            }
-
-            return true; // Token is valid
-        } else {
-            throw new RuntimeException("Invalid or expired token.");
-        }
+        getValidPasswordResetToken(token);
+        return true;
     }
 
-    // Step 3: Reset User's Password
+    @Transactional
     public void resetPassword(String token, String newPassword) {
-        Optional<PasswordResetToken> passwordResetTokenOpt = passwordResetTokenRepository.findByToken(token);
-
-        if (passwordResetTokenOpt.isPresent()) {
-            PasswordResetToken passwordResetToken = passwordResetTokenOpt.get();
-
-            // Check if the token is expired
-            if (passwordResetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-                throw new RuntimeException("Reset token has expired.");
-            }
-
-            // Get the user associated with the token
-            User user = passwordResetToken.getUser();
-
-            // Update the user's password
-            user.setPassword(passwordEncoder.encode(newPassword));
-            userRepository.save(user);
-
-            // Optionally, remove the token after it is used
-            passwordResetTokenRepository.delete(passwordResetToken);
-        } else {
-            throw new RuntimeException("Invalid token.");
-        }
+        PasswordResetToken resetToken = getValidPasswordResetToken(token);
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        passwordResetTokenRepository.delete(resetToken);
     }
 
-    // Register user and hash password
+    // REGISTRATION
+    @Transactional
     public User registerUser(UserRole role, Object userData) {
-        // Create user using the factory
         User user = userFactory.createUser(role, userData);
-
-        // Hash password before saving
-        String hashedPassword = passwordEncoder.encode(user.getPassword());
-        user.setPassword(hashedPassword);
-
-        // Save user to the database
-        user = userRepository.save(user);
-
-        // Generate email verification token
-        String verificationToken = UUID.randomUUID().toString();
-        user.setEmailVerificationToken(verificationToken);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setEmailVerificationToken(UUID.randomUUID().toString());
         userRepository.save(user);
-
-        // Send verification email
-        emailService.sendEmailVerification(user.getEmail(), verificationToken);
-
+        emailService.sendEmailVerification(user.getEmail(), user.getEmailVerificationToken());
         return user;
     }
+
     public boolean verifyEmail(String token) {
-        Optional<User> userOpt = userRepository.findByEmailVerificationToken(token);
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-
-            // Mark the user's email as verified
-            user.setEmailVerified(true);
-            user.setEmailVerificationToken(null); // Clear the verification token after successful verification
-            userRepository.save(user);
-            return true;  // Email verified successfully
-        }
-        return false;  // Invalid token
+        User user = userRepository.findByEmailVerificationToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid verification token."));
+        user.setEmailVerified(true);
+        user.setEmailVerificationToken(null);
+        userRepository.save(user);
+        return true;
     }
 
-
-    // Login user, generate JWT, store in Redis, and add to session manager
+    // AUTH
+    @Transactional
     public String loginUser(String username, String password) {
-        Optional<User> userOpt = userRepository.findByUsername(username);
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            // Validate password
-            if (passwordEncoder.matches(password, user.getPassword())) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials."));
 
-                if (!user.getRole().equalsIgnoreCase("ADMIN")&&!user.isEmailVerified()) {
-                    throw new RuntimeException("Please verify your email before logging in.");
-                }
-                UserSession existingSession = SessionManager.getInstance().getSessionByUserId(user.getId());
-                // If there's an existing session, prevent login
-                if (existingSession != null) {
-                    throw new RuntimeException("User is already logged in.");
-                }
-
-                // Generate JWT
-                String token = jwtUtil.generateToken(user.getId(), user.getRole());
-
-                // Create UserSession object with the token, userId, and role
-                UserSession userSession = new UserSession(token, user.getId(), user.getRole(), user.getEmail());
-
-                // Store the UserSession object in Redis (using token as the key)
-                redisTemplate.opsForValue().set(token, userSession);  // Store by token in Redis
-
-                // Add to SessionManager to manage active sessions in-memory by userId
-                SessionManager.getInstance().addSession(token, userSession);
-
-                return token;
-            }
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new IllegalArgumentException("Invalid credentials.");
         }
-        throw new RuntimeException("Invalid credentials");
+
+        if (!user.getRole().equalsIgnoreCase("ADMIN") && !user.isEmailVerified()) {
+            throw new IllegalStateException("Please verify your email before logging in.");
+        }
+
+        if (SessionManager.getInstance().getSessionByUserId(user.getId()) != null) {
+            throw new IllegalStateException("User already logged in.");
+        }
+
+        String token = jwtUtil.generateToken(user.getId(), user.getRole());
+        UserSession session = new UserSession(token, user.getId(), user.getRole(), user.getEmail());
+        redisTemplate.opsForValue().set(token, session);
+        SessionManager.getInstance().addSession(token, session);
+
+        return token;
     }
 
-    // Validate token using SessionManager
+    public void logoutUser(String token) {
+        UserSession session = SessionManager.getInstance().getSession(token);
+        if (session == null) {
+            throw new IllegalStateException("Invalid or expired token.");
+        }
+        redisTemplate.delete(token);
+        SessionManager.getInstance().invalidateToken(token);
+    }
+
     public boolean isTokenValid(String token) {
         return SessionManager.getInstance().isTokenValid(token);
     }
 
-    // Get user session by token (using token as key in Redis)
     public UserSession getSessionByToken(String token) {
-        // Retrieve session from Redis using token as the key
-        UserSession session = redisTemplate.opsForValue().get(token);
-        if (session != null) {
-            return session;
-        }
-        throw new RuntimeException("Session not found for the provided token.");
+        return getSessionOrThrow(token);
     }
 
-    // Get user session by userId (fetch token from SessionManager)
     public UserSession getSessionByUserId(Long userId) {
-        // Get token from SessionManager using userId
         UserSession session = SessionManager.getInstance().getSessionByUserId(userId);
-        if (session != null) {
-            return redisTemplate.opsForValue().get(session.getToken());  // Retrieve session using token from Redis
+        if (session == null) {
+            throw new IllegalStateException("No active session for user.");
         }
-        throw new RuntimeException("No active session for user.");
+        return redisTemplate.opsForValue().get(session.getToken());
     }
 
-    // Logout user
-    public void logoutUser(String token) {
-        UserSession existingSession = SessionManager.getInstance().getSession(token);
-        if (existingSession == null) {
-            throw new RuntimeException("Invalid or expired token. User is not logged in.");
-        }
-
-        // Remove the session from Redis using token
-        redisTemplate.delete(token);
-
-        // Invalidate the token using SessionManager
-        SessionManager.getInstance().invalidateToken(token);
-    }
-
-    // Fetch user by userId and validate authorization
+    // USER MANAGEMENT
     public Optional<User> getUserById(Long id, String token) {
-        UserSession currentSession = redisTemplate.opsForValue().get(token);
-        if (currentSession == null) {
-            throw new RuntimeException("User is not logged in.");
-        }
-
-        // If the session is for an admin or the user is fetching their own data
-        if (currentSession.getRole().equalsIgnoreCase("ADMIN") || currentSession.getUserId().equals(id)) {
+        UserSession session = getSessionOrThrow(token);
+        if (session.getRole().equalsIgnoreCase("ADMIN") || session.getUserId().equals(id)) {
             return userRepository.findById(id);
         } else {
-            throw new RuntimeException("You are not authorized to access this user's data.");
+            throw new IllegalStateException("Unauthorized access.");
         }
     }
 
-    // Update user details
-    public User updateUser(Long id, User updatedData, String token) {
-        UserSession currentSession = redisTemplate.opsForValue().get(token);
-        if (currentSession == null) {
-            throw new RuntimeException("User is not logged in.");
+    @Transactional
+    public User updateUser(Long id, Object updatedData, String token) {
+        UserSession session = getSessionOrThrow(token);
+
+        if (!session.getRole().equalsIgnoreCase("ADMIN") && !session.getUserId().equals(id)) {
+            throw new IllegalStateException("Unauthorized update attempt.");
         }
 
-        // If the session is for an admin or the user is updating their own data
-        if (currentSession.getRole().equalsIgnoreCase("ADMIN") || currentSession.getUserId().equals(id)) {
-            return userRepository.findById(id).map(user -> {
-                user.setUsername(updatedData.getUsername());
-                user.setEmail(updatedData.getEmail());
-                user.setPassword(passwordEncoder.encode(updatedData.getPassword())); // Rehash the password
-                return userRepository.save(user);
-            }).orElseThrow();
+        User existingUser = getUserOrThrow(id);
+
+        System.out.println("Type of data: " + updatedData.getClass().getName());
+        // If the data is a Map of fields
+        if (!(updatedData instanceof Map)) {
+            throw new IllegalArgumentException("Updated data is not a valid map.");
+        }
+
+        Map<String, Object> data = (Map<String, Object>) updatedData;
+
+        if (existingUser.getRole().equalsIgnoreCase("CUSTOMER")) {
+            updateCustomerProfile((CustomerProfile) existingUser, data);
+        } else if (existingUser.getRole().equalsIgnoreCase("MERCHANT")) {
+            updateMerchantProfile((MerchantProfile) existingUser, data);
         } else {
-            throw new RuntimeException("You are not authorized to update this user's data.");
+            throw new IllegalArgumentException("Mismatched profile types or invalid role.");
+        }
+
+        return userRepository.save(existingUser);
+    }
+
+    private void updateCustomerProfile(CustomerProfile existingCustomer, Map<String, Object> data) {
+        if (data.containsKey("username")) {
+            existingCustomer.setUsername((String) data.get("username"));
+        }
+        if (data.containsKey("email")) {
+            existingCustomer.setEmail((String) data.get("email"));
+        }
+        if (data.containsKey("password")) {
+            existingCustomer.setPassword(passwordEncoder.encode((String) data.get("password")));
+        }
+        if (data.containsKey("phoneNumber")) {
+            existingCustomer.setPhoneNumber((String) data.get("phoneNumber"));
+        }
+        if (data.containsKey("shippingAddress")) {
+            existingCustomer.setShippingAddress((String) data.get("shippingAddress"));
         }
     }
 
-    // Delete user by id (only admins can perform this action)
+    private void updateMerchantProfile(MerchantProfile existingMerchant, Map<String, Object> data) {
+        if (data.containsKey("username")) {
+            existingMerchant.setUsername((String) data.get("username"));
+        }
+        if (data.containsKey("email")) {
+            existingMerchant.setEmail((String) data.get("email"));
+        }
+        if (data.containsKey("password")) {
+            existingMerchant.setPassword(passwordEncoder.encode((String) data.get("password")));
+        }
+        if (data.containsKey("storeName")) {
+            existingMerchant.setStoreName((String) data.get("storeName"));
+        }
+        if (data.containsKey("storeAddress")) {
+            existingMerchant.setStoreAddress((String) data.get("storeAddress"));
+        }
+    }
+
+    @Transactional
     public void deleteUser(Long id, String token) {
-        UserSession currentSession = redisTemplate.opsForValue().get(token);
+        UserSession session = getSessionOrThrow(token);
 
-        if (currentSession == null || !currentSession.getRole().equalsIgnoreCase("ADMIN")) {
-            throw new RuntimeException("You must be an admin to perform this action.");
+        if (!session.getRole().equalsIgnoreCase("ADMIN")) {
+            throw new IllegalStateException("Only admins can delete users.");
         }
-        userRepository.deleteById(id);
+        try {
+            userRepository.deleteById(id);
+        } catch (EmptyResultDataAccessException ignored) {
+            // Don't care, already deleted
+        }
     }
 
-    // Ban a user
-    public void banUser(Long id, String token) {
-        UserSession currentSession = redisTemplate.opsForValue().get(token);
-
-        if (currentSession == null || !currentSession.getRole().equalsIgnoreCase("ADMIN")) {
-            throw new RuntimeException("You must be an admin to perform this action.");
-        }
-
-        userRepository.findById(id).ifPresent(user -> {
-            user.setBanned(true);
-            userRepository.save(user);
-        });
-    }
-
-    // Unban a user
-    public void unbanUser(Long id, String token) {
-        UserSession currentSession = redisTemplate.opsForValue().get(token);
-
-        if (currentSession == null || !currentSession.getRole().equalsIgnoreCase("ADMIN")) {
-            throw new RuntimeException("You must be an admin to perform this action.");
-        }
-
-        userRepository.findById(id).ifPresent(user -> {
-            user.setBanned(false);
-            userRepository.save(user);
-        });
-    }
-
-    // Delete current user's account
+    @Transactional
     public void deleteMyAccount(String token) {
-        UserSession currentSession = redisTemplate.opsForValue().get(token);
-
-        if (currentSession == null) {
-            throw new RuntimeException("User is not logged in.");
-        }
-
-        userRepository.findById(currentSession.getUserId()).ifPresent(user -> {
-            userRepository.delete(user);  // Delete the user from the database
-        });
+        UserSession session = getSessionOrThrow(token);
+        userRepository.findById(session.getUserId()).ifPresent(userRepository::delete);
     }
 
-    public void deposit(String token, Long userId, Double amount) {
-        CustomerProfile user = (CustomerProfile) userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+    @Transactional
+    public void banUser(Long id, String token) {
+        UserSession session = getSessionOrThrow(token);
 
-        // 4. Process the deposit (add amount to the user's balance)
-        double newBalance = user.getWallet() + amount;
-        user.setWallet(newBalance);
+        if (!session.getRole().equalsIgnoreCase("ADMIN")) {
+            throw new IllegalStateException("Only admins can ban users.");
+        }
 
+        User user = getUserOrThrow(id);
+        user.setBanned(true);
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void unbanUser(Long id, String token) {
+        UserSession session = getSessionOrThrow(token);
+
+        if (!session.getRole().equalsIgnoreCase("ADMIN")) {
+            throw new IllegalStateException("Only admins can unban users.");
+        }
+
+        User user = getUserOrThrow(id);
+        user.setBanned(false);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void deposit(String token, Long userId, Double amount) {
+        getSessionOrThrow(token);
+
+        CustomerProfile customer = (CustomerProfile) getUserOrThrow(userId);
+
+        customer.setWallet(customer.getWallet() + amount);
+        userRepository.save(customer);
+    }
+
+    @Transactional
+    public void deduct(String token, Long userId, Double amount) {
+        getSessionOrThrow(token);
+
+        CustomerProfile customer = (CustomerProfile) getUserOrThrow(userId);
+
+        customer.setWallet(amount);
+        userRepository.save(customer);
     }
 }
