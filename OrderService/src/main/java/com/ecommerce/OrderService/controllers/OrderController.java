@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.Date;
+
 @RestController
 @RequestMapping("/order")
 public class OrderController {
@@ -72,10 +74,20 @@ public class OrderController {
     }
 
     // Refund Order API
-    @PostMapping("/refund/{orderId}")
-    public ResponseEntity<String> refundOrder(@PathVariable Long orderId) {
+    @PostMapping("/acceptRefund/{orderId}")
+    public ResponseEntity<String> refundOrder(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
         try {
-            orderService.refundOrder(orderId);
+            orderService.refundOrder(extractToken(token), orderId);
+            return ResponseEntity.status(HttpStatus.OK).body("Order refunded successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error refunding order: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/requestRefund/{orderId}")
+    public ResponseEntity<String> requestRefund(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
+        try {
+            orderService.requestRefund(extractToken(token),orderId);
             return ResponseEntity.status(HttpStatus.OK).body("Order refunded successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error refunding order: " + e.getMessage());
@@ -84,9 +96,9 @@ public class OrderController {
 
     // Ship Order API
     @PostMapping("/ship/{orderId}")
-    public ResponseEntity<String> shipOrder(@PathVariable Long orderId) {
+    public ResponseEntity<String> shipOrder(@PathVariable Long orderId, @RequestBody(required = false) Date deliveryDate) {
         try {
-            orderService.shipOrder(orderId);
+            orderService.shipOrder(orderId, deliveryDate);
             return ResponseEntity.status(HttpStatus.OK).body("Order shipped successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error shipping order: " + e.getMessage());
