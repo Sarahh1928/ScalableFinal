@@ -36,8 +36,14 @@ public class UserController {
     }
 
     @PostMapping("/deposit/{userId}")
-    public ResponseEntity<User> deposit(String token, @PathVariable Long userId, @RequestBody Double amount) {
+    public ResponseEntity<User> deposit(@RequestHeader("Authorization") String token, @PathVariable Long userId, @RequestBody Double amount) {
         userService.deposit(extractToken(token), userId, amount);
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
+    @PostMapping("/deduct/{userId}")
+    public ResponseEntity<User> deduct(@RequestHeader("Authorization") String token, @PathVariable Long userId, @RequestBody Double amount) {
+        userService.deduct(extractToken(token), userId, amount);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
@@ -105,7 +111,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userData, @RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody Object userData, @RequestHeader("Authorization") String authorizationHeader) {
         String token = extractToken(authorizationHeader);
         if (!isTokenValid(token)) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
