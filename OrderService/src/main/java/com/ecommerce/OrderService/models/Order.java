@@ -2,6 +2,7 @@ package com.ecommerce.OrderService.models;
 
 import com.ecommerce.OrderService.models.enums.OrderStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.sql.Date;
 import java.util.List;
@@ -41,9 +42,9 @@ public class Order {
     @Column(nullable = true)
     private Date deliveryDate;  // Using java.sql.Date for date-only storage
 
-    @OneToOne(mappedBy = "order")  // Reference back to the RefundRequest (mappedBy means the relationship is owned by RefundRequest)
-    private RefundRequest refundRequest;  // This will hold the reference to the RefundRequest entity
-
+    @OneToOne(mappedBy = "order")
+    @JsonIgnoreProperties("order")  // prevents serializing the back-reference
+    private RefundRequest refundRequest;
     // Getters and Setters
     public Long getId() {
         return id;

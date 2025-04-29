@@ -1,11 +1,9 @@
 package com.ecommerce.OrderService.models;
 
 import com.ecommerce.OrderService.models.enums.RefundRequestStatus;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "refundRequests")
@@ -15,12 +13,14 @@ public class RefundRequest {
     private Long merchantId;
 
     @OneToOne
-    @JoinColumn(name = "order_id", referencedColumnName = "id") // Join the RefundRequest with the Order entity
-    private Order order;  // This will hold the reference to the Order entity
+    @JoinColumn(name = "order_id", referencedColumnName = "id")
+    @JsonIgnoreProperties("refundRequest")  // if you're serializing Order from here
+    private Order order;
 
     private RefundRequestStatus status;  // Refund request status
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     // Constructors

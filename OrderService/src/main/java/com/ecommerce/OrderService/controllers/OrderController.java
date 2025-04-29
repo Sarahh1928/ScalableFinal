@@ -1,15 +1,17 @@
 package com.ecommerce.OrderService.controllers;
 
 import com.ecommerce.OrderService.models.Order;
+import com.ecommerce.OrderService.models.RefundRequest;
 import com.ecommerce.OrderService.services.OrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Date;
+import java.util.List;
 
 @RestController
-@RequestMapping("/order")
+@RequestMapping("/orders")
 public class OrderController {
     private final OrderService orderService;
 
@@ -57,8 +59,8 @@ public class OrderController {
 
     // GET: List all orders (Optional, might be useful for admins)
     @GetMapping("/all")
-    public ResponseEntity<Iterable<Order>> getAllOrders() {
-        Iterable<Order> orders = orderService.getAllOrders();
+    public ResponseEntity<Iterable<Order>> getAllOrders(@RequestHeader("Authorization") String token) {
+        Iterable<Order> orders = orderService.getAllOrders(extractToken(token));
         return ResponseEntity.status(HttpStatus.OK).body(orders);
     }
 
@@ -82,6 +84,21 @@ public class OrderController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error refunding order: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/rejectRefund/{orderId}")
+    public ResponseEntity<String> rejectRefund(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
+        try {
+            orderService.rejectRefund(extractToken(token), orderId);
+            return ResponseEntity.status(HttpStatus.OK).body("Order refund rejected successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error rejecting request order: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/refundRequests")
+    public List<RefundRequest> refundRequests(@RequestHeader("Authorization") String token) {
+        return orderService.getRefundRequests(extractToken(token));
     }
 
     @PostMapping("/requestRefund/{orderId}")
@@ -114,5 +131,10 @@ public class OrderController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error delivering order: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/track/{orderId}")
+    public String trackOrder(@PathVariable Long orderId) {
+        return orderService.trackOrder(orderId);
     }
 }
