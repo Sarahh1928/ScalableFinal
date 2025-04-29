@@ -41,7 +41,6 @@ public class PaymentController {
     // Create payment
     @PostMapping
     public ResponseEntity<Payment> createPayment(
-            @RequestParam Long orderId,
             @RequestParam Long userId,
             @RequestParam String customerEmail,
             @RequestParam PaymentMethod method,
@@ -60,7 +59,7 @@ public class PaymentController {
         // Get the payment details array
         String[] paymentDetails = paymentRequest.getPaymentDetails();
 
-        Payment payment = paymentService.processPayment(token,orderId, userId, customerEmail, method, amount, paymentDetails);
+        Payment payment = paymentService.processPayment(token, userId, customerEmail, method, amount, paymentDetails);
         return ResponseEntity.ok(payment);
     }
 

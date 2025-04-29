@@ -1,5 +1,7 @@
 package com.ecommerce.OrderService.controllers;
 
+import com.ecommerce.OrderService.Dto.PaymentMethodDTO;
+import com.ecommerce.OrderService.Dto.PaymentRequestDTO;
 import com.ecommerce.OrderService.models.Order;
 import com.ecommerce.OrderService.models.RefundRequest;
 import com.ecommerce.OrderService.services.OrderService;
@@ -27,10 +29,20 @@ public class OrderController {
         return null;  // If the header doesn't contain a Bearer token, return null
     }
 
+    @PostMapping("/checkoutOrder")
+    public ResponseEntity<String> checkoutOrder(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam PaymentMethodDTO paymentMethod,
+            @RequestBody PaymentRequestDTO paymentRequestDTO
+    ) {
+        orderService.checkoutOrder(authorizationHeader, paymentMethod, paymentRequestDTO);
+        return ResponseEntity.ok("Order checkout initiated successfully.");
+    }
+
     // POST: Create a new order
     @PostMapping("/checkout")
-    public ResponseEntity<String> makeOrder(@RequestHeader("Authorization") String token) {
-        orderService.createOrder(extractToken(token));
+    public ResponseEntity<String> makeOrder(@RequestHeader("Authorization") String token, @RequestParam Long transactionId) {
+        orderService.createOrder(extractToken(token), transactionId);
         return ResponseEntity.status(HttpStatus.CREATED).body("Order created successfully.");
     }
 

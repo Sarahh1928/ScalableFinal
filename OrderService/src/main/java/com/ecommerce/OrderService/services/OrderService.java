@@ -1,7 +1,10 @@
 package com.ecommerce.OrderService.services;
 
+import com.ecommerce.OrderService.Clients.PaymentServiceFeignClient;
 import com.ecommerce.OrderService.Clients.ProductServiceFeignClient;
 import com.ecommerce.OrderService.Clients.UserServiceFeignClient;
+import com.ecommerce.OrderService.Dto.PaymentMethodDTO;
+import com.ecommerce.OrderService.Dto.PaymentRequestDTO;
 import com.ecommerce.OrderService.Dto.UserSessionDTO;
 import com.ecommerce.OrderService.models.Cart;
 import com.ecommerce.OrderService.models.CartItem;
@@ -41,6 +44,7 @@ public class OrderService {
     private final EmailNotificationObserver emailNotificationObserver;
     private final CartService cartService;
     private final RefundRepository refundRepository;
+    private final PaymentServiceFeignClient paymentServiceFeignClient;
 
     @Autowired
     public OrderService(
@@ -48,7 +52,7 @@ public class OrderService {
             @Qualifier("userSessionDTORedisTemplate") RedisTemplate<String, UserSessionDTO> sessionRedisTemplate,
             OrderRepository orderRepository, OrderStatusSubject orderStatusSubject,
             EmailNotificationObserver emailNotificationObserver, CartService cartService,
-            RefundRepository refundRepository) {
+            RefundRepository refundRepository, PaymentServiceFeignClient paymentServiceFeignClient) {
         this.cartRedisTemplate = cartRedisTemplate;
         this.sessionRedisTemplate = sessionRedisTemplate;
         this.orderRepository = orderRepository;
@@ -56,6 +60,7 @@ public class OrderService {
         this.emailNotificationObserver = emailNotificationObserver;
         this.cartService = cartService;
         this.refundRepository = refundRepository;
+        this.paymentServiceFeignClient = paymentServiceFeignClient;
     }
 
     private UserSessionDTO getSession(String token) {
@@ -72,9 +77,20 @@ public class OrderService {
     }
 
     @Transactional
-    public void createOrder(String token) {
-        UserSessionDTO userSessionDTO=getSession(token);
-        if(!userSessionDTO.getRole().equals(ROLE_CUSTOMER)){
+    public void checkoutOrder(String token, PaymentMethodDTO paymentMethod, PaymentRequestDTO paymentRequest) {
+
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!userSessionDTO.getRole().equals(ROLE_CUSTOMER)) {
+            throw new RuntimeException("Unauthorized role");
+        }
+        Cart cart = getCart(token);
+        paymentServiceFeignClient.createPayment(cart.getUserId(), userSessionDTO.getEmail(), paymentMethod, cart.getTotalPrice(), paymentRequest, token);
+    }
+
+    @Transactional
+    public void createOrder(String token, Long transactionId) {
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!userSessionDTO.getRole().equals(ROLE_CUSTOMER)) {
             throw new RuntimeException("Unauthorized role");
         }
         Cart cart = getCart(token);
@@ -93,6 +109,7 @@ public class OrderService {
             order.setTotalPrice(calculateTotalPrice(orderProducts));
             order.setTotalItemCount(orderProducts.size());
             order.setUserEmail(cart.getUserEmail());
+            order.setTransactionId(transactionId);
             orderRepository.save(order);
         });
 
@@ -104,20 +121,24 @@ public class OrderService {
     }
 
     public Order getOrderById(String token, Long orderId) {
-        UserSessionDTO userSessionDTO=getSession(token);
-        Order order= orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
-        switch(userSessionDTO.getRole()){
-            case ROLE_CUSTOMER:if(order.getUserId().equals(userSessionDTO.getUserId())) return order;
-            case ROLE_MERCHANT:if(order.getMerchantId().equals(userSessionDTO.getUserId())) return order;
-            case ROLE_ADMIN: return order;
-            default: throw new RuntimeException("You don't have permission to access this order");
+        UserSessionDTO userSessionDTO = getSession(token);
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+        switch (userSessionDTO.getRole()) {
+            case ROLE_CUSTOMER:
+                if (order.getUserId().equals(userSessionDTO.getUserId())) return order;
+            case ROLE_MERCHANT:
+                if (order.getMerchantId().equals(userSessionDTO.getUserId())) return order;
+            case ROLE_ADMIN:
+                return order;
+            default:
+                throw new RuntimeException("You don't have permission to access this order");
         }
 
     }
 
     public Order updateOrder(String token, Long orderId, Order updatedOrder) {
-        UserSessionDTO userSessionDTO=getSession(token);
-        if(!userSessionDTO.getRole().equals(ROLE_MERCHANT)||!userSessionDTO.getRole().equals(ROLE_ADMIN)){
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!userSessionDTO.getRole().equals(ROLE_MERCHANT) || !userSessionDTO.getRole().equals(ROLE_ADMIN)) {
             throw new RuntimeException("You are not allowed to update this order");
         }
         Order existingOrder = getOrderById(token, orderId);
@@ -135,8 +156,8 @@ public class OrderService {
     }
 
     public void deleteOrder(String token, Long orderId) {
-        UserSessionDTO userSessionDTO=getSession(token);
-        if(!userSessionDTO.getRole().equals(ROLE_MERCHANT)||!userSessionDTO.getRole().equals(ROLE_ADMIN)){
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!userSessionDTO.getRole().equals(ROLE_MERCHANT) || !userSessionDTO.getRole().equals(ROLE_ADMIN)) {
             throw new RuntimeException("You are not allowed to delete this order");
         }
         Order order = getOrderById(token, orderId);
@@ -160,8 +181,9 @@ public class OrderService {
         }
     }
 
-    public void cancelOrder(String token, Long orderId) { UserSessionDTO userSessionDTO=getSession(token);
-        if(!userSessionDTO.getRole().equals(ROLE_MERCHANT)||!userSessionDTO.getRole().equals(ROLE_ADMIN)){
+    public void cancelOrder(String token, Long orderId) {
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!userSessionDTO.getRole().equals(ROLE_MERCHANT) || !userSessionDTO.getRole().equals(ROLE_ADMIN)) {
             throw new RuntimeException("You are not allowed to update this order");
         }
         Order order = getOrderById(token, orderId);
@@ -173,8 +195,8 @@ public class OrderService {
 
     public void requestRefund(String token, Long orderId) {
         UserSessionDTO session = getSession(token);
-        UserSessionDTO userSessionDTO=getSession(token);
-        if(!userSessionDTO.getRole().equals(ROLE_CUSTOMER)){
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!userSessionDTO.getRole().equals(ROLE_CUSTOMER)) {
             throw new RuntimeException("You are not allowed to refund this order");
         }
 
@@ -192,9 +214,10 @@ public class OrderService {
         orderRepository.save(order);
         log.info("Refund requested for orderId: {}", orderId);
     }
+
     public void rejectRefund(String token, Long orderId) {
-        UserSessionDTO userSessionDTO=getSession(token);
-        if(!userSessionDTO.getRole().equals(ROLE_MERCHANT)){
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!userSessionDTO.getRole().equals(ROLE_MERCHANT)) {
             throw new RuntimeException("You are not allowed to reject this refund Request");
         }
 
@@ -239,11 +262,9 @@ public class OrderService {
     }
 
 
-
-
     public void refundOrder(String token, Long orderId) {
-        UserSessionDTO userSessionDTO=getSession(token);
-        if(!userSessionDTO.getRole().equals(ROLE_MERCHANT)){
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!userSessionDTO.getRole().equals(ROLE_MERCHANT)) {
             throw new RuntimeException("You are not allowed to accept this refund Request");
         }
         Order order = getOrderById(token, orderId);
@@ -273,8 +294,8 @@ public class OrderService {
 
 
     public void shipOrder(String token, Long orderId, Date deliveryDate) {
-        UserSessionDTO userSessionDTO=getSession(token);
-        if(!userSessionDTO.getRole().equals(ROLE_MERCHANT)){
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!userSessionDTO.getRole().equals(ROLE_MERCHANT)) {
             throw new RuntimeException("You are not allowed to update this order");
         }
         Order order = getOrderById(token, orderId);
@@ -287,8 +308,8 @@ public class OrderService {
     }
 
     public void deliverOrder(String token, Long orderId) {
-        UserSessionDTO userSessionDTO=getSession(token);
-        if(!userSessionDTO.getRole().equals(ROLE_MERCHANT)){
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!userSessionDTO.getRole().equals(ROLE_MERCHANT)) {
             throw new RuntimeException("You are not allowed to update this order");
         }
         Order order = getOrderById(token, orderId);
@@ -306,12 +327,12 @@ public class OrderService {
 
     public String trackOrder(String token, Long orderId) {
         Order order = getOrderById(token, orderId);
-        switch(order.getStatus()){
+        switch (order.getStatus()) {
             case DELIVERED -> {
-                return "Order Status: " + order.getStatus() + " .It was Delivered on "+ order.getDeliveryDate();
+                return "Order Status: " + order.getStatus() + " .It was Delivered on " + order.getDeliveryDate();
             }
             case SHIPPED -> {
-                return "Order Status: " + order.getStatus() + " .It will be Delivered on "+ order.getDeliveryDate();
+                return "Order Status: " + order.getStatus() + " .It will be Delivered on " + order.getDeliveryDate();
             }
             case CONFIRMED -> {
                 return "Order Status: " + order.getStatus() + " .Delivery Date will be determined upon Shipment!";
