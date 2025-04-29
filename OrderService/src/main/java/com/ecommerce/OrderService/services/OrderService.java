@@ -41,7 +41,6 @@ public class OrderService {
     private final EmailNotificationObserver emailNotificationObserver;
     private final CartService cartService;
     private final RefundRepository refundRepository;
-    private final UserServiceFeignClient userServiceFeignClient;
 
     @Autowired
     public OrderService(
@@ -49,7 +48,7 @@ public class OrderService {
             @Qualifier("userSessionDTORedisTemplate") RedisTemplate<String, UserSessionDTO> sessionRedisTemplate,
             OrderRepository orderRepository, OrderStatusSubject orderStatusSubject,
             EmailNotificationObserver emailNotificationObserver, CartService cartService,
-            RefundRepository refundRepository, UserServiceFeignClient userServiceFeignClient) {
+            RefundRepository refundRepository) {
         this.cartRedisTemplate = cartRedisTemplate;
         this.sessionRedisTemplate = sessionRedisTemplate;
         this.orderRepository = orderRepository;
@@ -57,7 +56,6 @@ public class OrderService {
         this.emailNotificationObserver = emailNotificationObserver;
         this.cartService = cartService;
         this.refundRepository = refundRepository;
-        this.userServiceFeignClient = userServiceFeignClient;
     }
 
     private UserSessionDTO getSession(String token) {

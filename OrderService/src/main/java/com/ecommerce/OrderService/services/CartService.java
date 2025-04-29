@@ -14,6 +14,8 @@ import java.util.Objects;
 @Service
 public class CartService {
 
+    private static final String ROLE_CUSTOMER = "CUSTOMER";
+
     private final RedisTemplate<String, Cart> cartRedisTemplate;
     private final RedisTemplate<String, UserSessionDTO> sessionRedisTemplate;
     private final ProductServiceFeignClient productServiceFeignClient;
@@ -43,47 +45,38 @@ public class CartService {
     }
 
     public void addItemToCart(String token, Long productId, int quantity) {
-        System.out.println("Adding item to cart...");
-        System.out.println("Token: " + token + ", Product ID: " + productId + ", Quantity: " + quantity);
-
+        UserSessionDTO session = getSession(token);
+        if(!session.getRole().equalsIgnoreCase(ROLE_CUSTOMER)){
+            throw new RuntimeException("You are not a customer");
+        }
         // Check product availability
         var product = productServiceFeignClient.getProductById(productId);
         if (product == null) {
-            System.out.println("Product not found for Product ID: " + productId);
             throw new RuntimeException("Product not found");
         } else if (product.getStock() < quantity) {
-            System.out.println("Not Enough Stock for Product ID: " + productId + ". Available stock: " + product.getStock());
             throw new RuntimeException("Not Enough Stock");
         }
-
-        UserSessionDTO session = getSession(token);
         Long userId = session.getUserId();
         String email = session.getEmail();
-        System.out.println("User Session: " + session);
 
         Cart cart = cartRedisTemplate.opsForValue().get(token);
         if (cart == null) {
-            System.out.println("Cart not found for Token: " + token + ". Creating a new cart.");
-            cart = new Cart(token, userId, email);
+            cart = new Cart(userId, email);
         } else {
             cart.setUserEmail(email);
-            System.out.println("Found existing cart for Token: " + token);
         }
 
         // Add the item to the cart
         cart.addItem(productId, quantity, product.getPrice(), product.getMerchantId());
-        System.out.println("Added item to cart. Product ID: " + productId + ", Quantity: " + quantity + ", Total Price: " + (product.getPrice() * quantity));
 
         // Save the updated cart back to Redis
         cartRedisTemplate.opsForValue().set(token, cart);
-        System.out.println("Cart updated in Redis for Token: " + token);
     }
 
     public Cart viewCart(String token) {
-        // Fetch the cart or create a new one if not present
         UserSessionDTO session = getSession(token);
         Cart cart = cartRedisTemplate.opsForValue().get(token);
-        return cart != null ? cart : new Cart(token, session.getUserId(), session.getEmail());
+        return cart != null ? cart : new Cart(session.getUserId(), session.getEmail());
     }
 
     public void removeItemFromCart(String token, Long productId, Integer quantity) {

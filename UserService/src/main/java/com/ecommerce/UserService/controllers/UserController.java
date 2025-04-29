@@ -174,8 +174,8 @@ public class UserController {
 
     // Request Password Reset (Step 1)
     @PostMapping("/reset-request")
-    public void requestPasswordReset(@RequestParam String email) {
-        userService.requestPasswordReset(email);
+    public void requestPasswordReset(@RequestHeader("Authorization") String token, @RequestParam String email) {
+        userService.requestPasswordReset(extractToken(token), email);
     }
 
     // Reset Password (Step 3)
