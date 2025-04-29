@@ -1,12 +1,15 @@
 package com.ecommerce.PaymentService.services;
 import com.ecommerce.PaymentService.dto.UserSessionDTO;
+import com.ecommerce.PaymentService.models.OrderMessage;
 import com.ecommerce.PaymentService.models.Payment;
 import com.ecommerce.PaymentService.models.enums.PaymentMethod;
 import com.ecommerce.PaymentService.models.enums.PaymentStatus;
 import com.ecommerce.PaymentService.repositories.PaymentRepository;
 import com.ecommerce.PaymentService.services.Factory.PaymentStrategyFactory;
 import com.ecommerce.PaymentService.services.strategy.PaymentStrategy;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
@@ -21,6 +24,12 @@ import java.util.UUID;
 @Service
 public class PaymentService {
     private final PaymentRepository paymentRepository;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    @Value("${order.queue.name}")
+    private String orderQueue;
 
     private final RedisTemplate<String, UserSessionDTO> sessionRedisTemplate;
     @Autowired
@@ -66,6 +75,14 @@ public class PaymentService {
 
             payment.setStatus(isSuccessful ? PaymentStatus.SUCCESSFUL : PaymentStatus.FAILED);
             payment.setTransactionId(UUID.randomUUID().toString());
+
+            if (isSuccessful) {
+                OrderMessage message = new OrderMessage();
+                message.setToken(token);
+                message.setTransactionId(payment.getId());
+
+                rabbitTemplate.convertAndSend(orderQueue, message);
+            }
 
 
             return paymentRepository.save(payment);
@@ -115,6 +132,16 @@ public class PaymentService {
         paymentRepository.delete(payment);
     }
 
+    public void processPayment(String token, Long transactionId) {
+        boolean paymentSuccess = true; // or false, based on your logic
+
+        OrderMessage message = new OrderMessage();
+        message.setToken(token);
+        message.setTransactionId(transactionId);
+
+        rabbitTemplate.convertAndSend(orderQueue, message);
+    }
+
     // Additional Function: Refund payment
     @Transactional
     public Payment refundPayment(Long paymentId) {
@@ -125,8 +152,6 @@ public class PaymentService {
             throw new RuntimeException("Only successful payments can be refunded");
         }
 
-        // In a real implementation, call the payment provider's refund API
-        payment.setStatus(PaymentStatus.REFUNDED);
         payment = paymentRepository.save(payment);
 
         return payment;
@@ -142,7 +167,6 @@ public class PaymentService {
             throw new RuntimeException("Only pending payments can be cancelled");
         }
 
-        payment.setStatus(PaymentStatus.CANCELLED);
         payment = paymentRepository.save(payment);
 
         return payment;
