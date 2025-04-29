@@ -36,24 +36,25 @@ public class OrderController {
 
     // GET: Read an order by ID
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> getOrder(@PathVariable Long orderId) {
-        Order order = orderService.getOrderById(orderId);
+    public ResponseEntity<Order> getOrder(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
+        Order order = orderService.getOrderById(extractToken(token), orderId);
         return ResponseEntity.status(HttpStatus.OK).body(order);
     }
 
     // PUT: Update an existing order
     @PutMapping("/{orderId}")
     public ResponseEntity<Order> updateOrder(
+            @RequestHeader("Authorization") String token,
             @PathVariable Long orderId,
             @RequestBody Order updatedOrder) {
-        Order order = orderService.updateOrder(orderId, updatedOrder);
+        Order order = orderService.updateOrder(extractToken(token),orderId, updatedOrder);
         return ResponseEntity.status(HttpStatus.OK).body(order);
     }
 
     // DELETE: Delete an order by ID
     @DeleteMapping("/{orderId}")
-    public ResponseEntity<String> deleteOrder(@PathVariable Long orderId) {
-        orderService.deleteOrder(orderId);
+    public ResponseEntity<String> deleteOrder(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
+        orderService.deleteOrder(extractToken(token), orderId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).body("Order deleted successfully.");
     }
 
@@ -66,9 +67,9 @@ public class OrderController {
 
     // Cancel Order API
     @PostMapping("/cancel/{orderId}")
-    public ResponseEntity<String> cancelOrder(@PathVariable Long orderId) {
+    public ResponseEntity<String> cancelOrder(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
         try {
-            orderService.cancelOrder(orderId);
+            orderService.cancelOrder(extractToken(token), orderId);
             return ResponseEntity.status(HttpStatus.OK).body("Order cancelled successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error cancelling order: " + e.getMessage());
@@ -113,9 +114,9 @@ public class OrderController {
 
     // Ship Order API
     @PostMapping("/ship/{orderId}")
-    public ResponseEntity<String> shipOrder(@PathVariable Long orderId, @RequestBody(required = false) Date deliveryDate) {
+    public ResponseEntity<String> shipOrder(@RequestHeader("Authorization") String token, @PathVariable Long orderId, @RequestBody(required = false) Date deliveryDate) {
         try {
-            orderService.shipOrder(orderId, deliveryDate);
+            orderService.shipOrder(extractToken(token),orderId, deliveryDate);
             return ResponseEntity.status(HttpStatus.OK).body("Order shipped successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error shipping order: " + e.getMessage());
@@ -124,9 +125,9 @@ public class OrderController {
 
     // Deliver Order API
     @PostMapping("/deliver/{orderId}")
-    public ResponseEntity<String> deliverOrder(@PathVariable Long orderId) {
+    public ResponseEntity<String> deliverOrder(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
         try {
-            orderService.deliverOrder(orderId);
+            orderService.deliverOrder(extractToken(token), orderId);
             return ResponseEntity.status(HttpStatus.OK).body("Order delivered successfully.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error delivering order: " + e.getMessage());
@@ -134,7 +135,7 @@ public class OrderController {
     }
 
     @GetMapping("/track/{orderId}")
-    public String trackOrder(@PathVariable Long orderId) {
-        return orderService.trackOrder(orderId);
+    public String trackOrder(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
+        return orderService.trackOrder(token, orderId);
     }
 }
