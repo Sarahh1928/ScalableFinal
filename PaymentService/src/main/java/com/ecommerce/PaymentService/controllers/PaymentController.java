@@ -1,5 +1,6 @@
 package com.ecommerce.PaymentService.controllers;
 
+import com.ecommerce.PaymentService.dto.UserSessionDTO;
 import com.ecommerce.PaymentService.models.Payment;
 import com.ecommerce.PaymentService.models.PaymentRequest;
 import com.ecommerce.PaymentService.models.enums.PaymentMethod;
@@ -7,6 +8,7 @@ import com.ecommerce.PaymentService.models.enums.PaymentStatus;
 import com.ecommerce.PaymentService.services.PaymentService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,18 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
+    private String extractToken(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);  // Remove "Bearer " prefix
+        }
+        return null;  // If the header doesn't contain a Bearer token, return null
+    }
+    @GetMapping("/getToken")
+    public String logoutUser(@RequestHeader("Authorization") String token) {
+        String actualToken = extractToken(token);
+        return paymentService.getToken(actualToken);
+    }
+
     // Create payment
     @PostMapping
     public ResponseEntity<Payment> createPayment(
@@ -32,13 +46,21 @@ public class PaymentController {
             @RequestParam String customerEmail,
             @RequestParam PaymentMethod method,
             @RequestParam double amount,
-            @RequestBody PaymentRequest paymentRequest,
-            @RequestHeader("Authorization") String authorizationHeader) {  // Expect PaymentRequest here
+            @RequestBody(required = false) PaymentRequest paymentRequest, // Make it optional
+            @RequestHeader("Authorization") String authorizationHeader) { // Expect PaymentRequest here
 
+        // Extract token from Authorization header
+        String token = extractToken(authorizationHeader);
+
+        // Get user session details from the token
+        UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
+        if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
+            throw new IllegalArgumentException("Invalid user session");
+        }
         // Get the payment details array
         String[] paymentDetails = paymentRequest.getPaymentDetails();
 
-        Payment payment = paymentService.processPayment(orderId, userId, customerEmail, method, amount, paymentDetails);
+        Payment payment = paymentService.processPayment(token,orderId, userId, customerEmail, method, amount, paymentDetails);
         return ResponseEntity.ok(payment);
     }
 

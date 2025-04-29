@@ -97,9 +97,11 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://payment-db:5432/payment_db
       - SPRING_DATASOURCE_USERNAME=payment
       - SPRING_DATASOURCE_PASSWORD=password
+      - REDIS_HOST=redis_cache
     depends_on:
       - payment-db
       - rabbitmq
+      - redis_cache
 
   payment-db:
     image: postgres
