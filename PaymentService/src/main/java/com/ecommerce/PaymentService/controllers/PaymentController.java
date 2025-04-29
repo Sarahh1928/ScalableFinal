@@ -32,7 +32,8 @@ public class PaymentController {
             @RequestParam String customerEmail,
             @RequestParam PaymentMethod method,
             @RequestParam double amount,
-            @RequestBody PaymentRequest paymentRequest) {  // Expect PaymentRequest here
+            @RequestBody PaymentRequest paymentRequest,
+            @RequestHeader("Authorization") String authorizationHeader) {  // Expect PaymentRequest here
 
         // Get the payment details array
         String[] paymentDetails = paymentRequest.getPaymentDetails();
