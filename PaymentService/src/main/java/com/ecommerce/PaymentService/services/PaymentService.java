@@ -1,4 +1,5 @@
 package com.ecommerce.PaymentService.services;
+import com.ecommerce.PaymentService.dto.UserSessionDTO;
 import com.ecommerce.PaymentService.models.Payment;
 import com.ecommerce.PaymentService.models.enums.PaymentMethod;
 import com.ecommerce.PaymentService.models.enums.PaymentStatus;
@@ -6,11 +7,10 @@ import com.ecommerce.PaymentService.repositories.PaymentRepository;
 import com.ecommerce.PaymentService.services.Factory.PaymentStrategyFactory;
 import com.ecommerce.PaymentService.services.strategy.PaymentStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -22,14 +22,31 @@ import java.util.UUID;
 public class PaymentService {
     private final PaymentRepository paymentRepository;
 
+    private final RedisTemplate<String, UserSessionDTO> sessionRedisTemplate;
     @Autowired
-    public PaymentService(PaymentRepository paymentRepository) {
+    private PaymentStrategyFactory paymentStrategyFactory;
+
+    @Autowired
+    public PaymentService(PaymentRepository paymentRepository, RedisTemplate<String, UserSessionDTO> sessionRedisTemplate) {
         this.paymentRepository = paymentRepository;
+        this.sessionRedisTemplate = sessionRedisTemplate;
     }
 
+    public String getToken(String token) {
+        UserSessionDTO userSession=sessionRedisTemplate.opsForValue().get(token);
+        assert userSession != null;
+        return userSession.toString();
+    }
+    public UserSessionDTO getUserSessionFromToken(String token) {
+        // Retrieve the user session from Redis using the provided token
+        UserSessionDTO userSession=sessionRedisTemplate.opsForValue().get(token);
+
+        // Check if the session exists and if the user role is "merchant"
+        return userSession;
+    }
     // Create: Initiate payment
     @Transactional
-    public Payment processPayment(Long orderId, Long userId, String customerEmail,
+    public Payment processPayment(String token,Long orderId, Long userId, String customerEmail,
                                   PaymentMethod method, double amount, Object... paymentDetails) {
         Payment payment = new Payment();
         payment.setOrderId(orderId);
@@ -44,7 +61,8 @@ public class PaymentService {
         payment = paymentRepository.save(payment);
 
         try {
-            PaymentStrategy strategy = PaymentStrategyFactory.createPaymentStrategy(method, paymentDetails);
+            PaymentStrategy strategy = paymentStrategyFactory.createPaymentStrategy(userId, token, method, paymentDetails);
+
             boolean isSuccessful = strategy.processPayment(amount);
 
             payment.setStatus(isSuccessful ? PaymentStatus.SUCCESSFUL : PaymentStatus.FAILED);

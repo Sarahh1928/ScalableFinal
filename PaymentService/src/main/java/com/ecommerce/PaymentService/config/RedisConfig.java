@@ -1,6 +1,6 @@
-package com.ecommerce.ProductService.config;
+package com.ecommerce.PaymentService.config;
 
-import com.ecommerce.ProductService.Dto.UserSessionDTO;
+import com.ecommerce.PaymentService.dto.UserSessionDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

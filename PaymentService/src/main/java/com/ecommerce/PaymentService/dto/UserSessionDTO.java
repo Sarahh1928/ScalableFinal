@@ -1,4 +1,4 @@
-package com.ecommerce.ProductService.Dto;
+package com.ecommerce.PaymentService.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
