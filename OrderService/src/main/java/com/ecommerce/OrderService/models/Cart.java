@@ -8,7 +8,6 @@ import java.util.Map;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Cart {
 
-    private String token;
     private Long userId;
     private String email;
     private Map<Long, CartItem> items;
@@ -18,8 +17,7 @@ public class Cart {
 
     public Cart() {}
 
-    public Cart(String token, Long userId, String email) {
-        this.token = token;
+    public Cart(Long userId, String email) {
         this.userId = userId;
         this.email = email;
         this.items = new HashMap<>();
@@ -85,14 +83,6 @@ public class Cart {
 
     public double getTotalPrice() {
         return totalPrice;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
     }
 
     public Long getUserId() {

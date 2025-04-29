@@ -23,6 +23,10 @@ import java.util.UUID;
 @Service
 public class UserService {
 
+    private static final String ROLE_CUSTOMER = "CUSTOMER";
+    private static final String ROLE_MERCHANT = "MERCHANT";
+    private static final String ROLE_ADMIN = "ADMIN";
+
     @Autowired private UserRepository userRepository;
     @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
     @Autowired private UserFactory userFactory;
@@ -46,34 +50,43 @@ public class UserService {
                 .orElseThrow(() -> new IllegalStateException("Invalid or expired password reset token."));
     }
 
-    private User getUserOrThrow(Long id) {
-        return userRepository.findById(id)
+    private User getUserOrThrow(String token, Long id) {
+        User user= userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
+        UserSession session = getSessionOrThrow(token);
+        if (!session.getRole().equalsIgnoreCase(ROLE_ADMIN)&&!user.getId().equals(session.getUserId())) {
+            throw new IllegalStateException("You are not to access this user info.");
+        }
+        return user;
     }
 
     // PASSWORD RESET
-    public void requestPasswordReset(String email) {
+    public void requestPasswordReset(String token, String email) {
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("No user found with the provided email."));
-
-        PasswordResetToken token = new PasswordResetToken(
+        UserSession session = getSessionOrThrow(token);
+        if (!user.getId().equals(session.getUserId())) {
+            throw new IllegalStateException("You are not to access this user info.");
+        }
+        PasswordResetToken resetToken = new PasswordResetToken(
                 UUID.randomUUID().toString(),
                 user,
                 LocalDateTime.now().plusHours(1)
         );
-        passwordResetTokenRepository.save(token);
-        emailService.sendPasswordResetEmail(user.getEmail(), token.getToken());
+        passwordResetTokenRepository.save(resetToken);
+        emailService.sendPasswordResetEmail(user.getEmail(), resetToken.getToken());
     }
 
-    public boolean validatePasswordResetToken(String token) {
-        getValidPasswordResetToken(token);
-        return true;
-    }
 
     @Transactional
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = getValidPasswordResetToken(token);
         User user = resetToken.getUser();
+        UserSession session = getSessionOrThrow(token);
+        if (!user.getId().equals(session.getUserId())) {
+            throw new IllegalStateException("You are not to access this user info.");
+        }
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         passwordResetTokenRepository.delete(resetToken);
@@ -142,14 +155,6 @@ public class UserService {
         return getSessionOrThrow(token);
     }
 
-    public UserSession getSessionByUserId(Long userId) {
-        UserSession session = SessionManager.getInstance().getSessionByUserId(userId);
-        if (session == null) {
-            throw new IllegalStateException("No active session for user.");
-        }
-        return redisTemplate.opsForValue().get(session.getToken());
-    }
-
     // USER MANAGEMENT
     public Optional<User> getUserById(Long id, String token) {
         UserSession session = getSessionOrThrow(token);
@@ -168,9 +173,8 @@ public class UserService {
             throw new IllegalStateException("Unauthorized update attempt.");
         }
 
-        User existingUser = getUserOrThrow(id);
+        User existingUser = getUserOrThrow(token, id);
 
-        System.out.println("Type of data: " + updatedData.getClass().getName());
         // If the data is a Map of fields
         if (!(updatedData instanceof Map)) {
             throw new IllegalArgumentException("Updated data is not a valid map.");
@@ -253,7 +257,7 @@ public class UserService {
             throw new IllegalStateException("Only admins can ban users.");
         }
 
-        User user = getUserOrThrow(id);
+        User user = getUserOrThrow(token, id);
         user.setBanned(true);
         userRepository.save(user);
     }
@@ -266,16 +270,21 @@ public class UserService {
             throw new IllegalStateException("Only admins can unban users.");
         }
 
-        User user = getUserOrThrow(id);
+        User user = getUserOrThrow(token, id);
         user.setBanned(false);
         userRepository.save(user);
+    }
+
+    private User getUser(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
     }
 
     @Transactional
     public void deposit(String token, Long userId, Double amount) {
         getSessionOrThrow(token);
 
-        CustomerProfile customer = (CustomerProfile) getUserOrThrow(userId);
+        CustomerProfile customer = (CustomerProfile) getUser(userId);
 
         customer.setWallet(customer.getWallet() + amount);
         userRepository.save(customer);
@@ -285,7 +294,7 @@ public class UserService {
     public void deduct(String token, Long userId, Double amount) {
         getSessionOrThrow(token);
 
-        CustomerProfile customer = (CustomerProfile) getUserOrThrow(userId);
+        CustomerProfile customer = (CustomerProfile) getUser(userId);
 
         customer.setWallet(amount);
         userRepository.save(customer);
