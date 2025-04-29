@@ -46,10 +46,10 @@ public class PaymentController {
             @RequestParam PaymentMethod method,
             @RequestParam double amount,
             @RequestBody(required = false) PaymentRequest paymentRequest, // Make it optional
-            @RequestHeader("Authorization") String authorizationHeader) { // Expect PaymentRequest here
+            @RequestParam String token) { // Expect PaymentRequest here
 
         // Extract token from Authorization header
-        String token = extractToken(authorizationHeader);
+//        String token = extractToken(authorizationHeader);
 
         // Get user session details from the token
         UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
