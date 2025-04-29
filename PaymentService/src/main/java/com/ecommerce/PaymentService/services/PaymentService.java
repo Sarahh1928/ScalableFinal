@@ -46,10 +46,9 @@ public class PaymentService {
     }
     // Create: Initiate payment
     @Transactional
-    public Payment processPayment(String token,Long orderId, Long userId, String customerEmail,
+    public Payment processPayment(String token, Long userId, String customerEmail,
                                   PaymentMethod method, double amount, Object... paymentDetails) {
         Payment payment = new Payment();
-        payment.setOrderId(orderId);
         payment.setUserId(userId);
         payment.setCustomerEmail(customerEmail);
         payment.setMethod(method);

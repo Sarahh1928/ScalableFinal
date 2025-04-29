@@ -42,6 +42,9 @@ public class Order {
     @Column(nullable = true)
     private Date deliveryDate;  // Using java.sql.Date for date-only storage
 
+    @Column(nullable = true)
+    private Long transactionId;
+
     @OneToOne(mappedBy = "order")
     @JsonIgnoreProperties("order")  // prevents serializing the back-reference
     private RefundRequest refundRequest;
@@ -143,5 +146,13 @@ public class Order {
 
         this.totalPrice = price;
         this.totalItemCount = itemCount;
+    }
+
+    public Long getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(Long transactionId) {
+        this.transactionId = transactionId;
     }
 }
