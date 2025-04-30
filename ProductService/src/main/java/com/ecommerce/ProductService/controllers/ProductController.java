@@ -51,7 +51,7 @@ public class ProductController {
         }
 
         // Proceed to add product if the user is authorized
-        Product newProduct = productService.createProduct(category, product);
+        Product newProduct = productService.createProduct(userSession.getUserId(),category, product);
         return ResponseEntity.status(HttpStatus.CREATED).body(newProduct);
     }
 
@@ -140,8 +140,25 @@ public class ProductController {
         return productService.getAverageRating(productId);
     }
 
-    @PutMapping("/{id}/stock")
-    public Product updateStock(
+    @PutMapping("/{id}/addstock")
+    public Product addStock(
+            @PathVariable Long id,
+            @RequestParam int stock,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+
+        // Get user session details from the token
+        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+        if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
+
+            throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
+        }
+        Product product = productService.addStock(userSession.getEmail(),id, stock);
+        return product;
+    }
+
+    @PutMapping("/{id}/removestock")
+    public Product removeStock(
             @PathVariable Long id,
             @RequestParam int stock,
             @RequestHeader("Authorization") String authorizationHeader) {
@@ -152,7 +169,7 @@ public class ProductController {
         if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
             throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
         }
-        Product product = productService.updateStock(userSession.getEmail(),id, stock);
+        Product product = productService.removeStock(userSession.getEmail(),id, stock);
         return product;
     }
 }
