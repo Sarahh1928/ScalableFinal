@@ -3,7 +3,7 @@ package com.ecommerce.OrderService.Dto;
 public class ProductResponseDTO {
     private Long id;
     private String name;
-    private int stock;
+    private int stockLevel;
     private double price;
     private Long merchantId;
 
@@ -34,12 +34,12 @@ public class ProductResponseDTO {
         this.name = name;
     }
 
-    public int getStock() {
-        return stock;
+    public int getStockLevel() {
+        return stockLevel;
     }
 
-    public void setStock(int stock) {
-        this.stock = stock;
+    public void setStockLevel(int stockLevel) {
+        this.stockLevel = stockLevel;
     }
 
     public Long getMerchantId() {
@@ -55,7 +55,7 @@ public class ProductResponseDTO {
         return "ProductResponseDTO{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", stock=" + stock +
+                ", stock=" + stockLevel +
                 ", price=" + price +
                 ", merchantId=" + merchantId +
                 '}';

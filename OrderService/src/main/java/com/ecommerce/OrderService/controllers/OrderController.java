@@ -35,7 +35,8 @@ public class OrderController {
             @RequestParam PaymentMethodDTO paymentMethod,
             @RequestBody PaymentRequestDTO paymentRequestDTO
     ) {
-        orderService.checkoutOrder(authorizationHeader, paymentMethod, paymentRequestDTO);
+        extractToken(authorizationHeader);
+        orderService.checkoutOrder(extractToken(authorizationHeader), paymentMethod, paymentRequestDTO);
         return ResponseEntity.ok("Order checkout initiated successfully.");
     }
 

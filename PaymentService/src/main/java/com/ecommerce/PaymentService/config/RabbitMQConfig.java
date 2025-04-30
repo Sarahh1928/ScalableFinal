@@ -14,7 +14,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue orderQueue(@Value("${order.queue.name}") String queueName) {
-        return new Queue(queueName, false);
+        return new Queue(queueName, true);  // Making the queue durable
     }
 
     @Bean
