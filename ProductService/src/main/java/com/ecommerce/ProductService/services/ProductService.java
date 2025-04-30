@@ -49,7 +49,7 @@ public class ProductService {
         return userSession;
     }
 
-    public Product createProduct(ProductCategory category, Map<String, Object> input) {
+    public Product createProduct(long merchantId,ProductCategory category, Map<String, Object> input) {
         try {
             Product newProduct = ProductFactory.createProduct(category);
 
@@ -58,7 +58,7 @@ public class ProductService {
             newProduct.setPrice(Double.parseDouble(input.get("price").toString()));
             newProduct.setBrand((String) input.get("brand"));
             newProduct.setColor((String) input.get("color"));
-            newProduct.setMerchantId(Long.parseLong(input.get("merchantId").toString()));
+            newProduct.setMerchantId(merchantId);
             newProduct.setStockLevel(Integer.parseInt(input.get("stockLevel").toString()));
 
             // Specific attributes
@@ -193,13 +193,31 @@ public class ProductService {
                 .orElse(0.0);
     }
 
-    public Product updateStock(String alertEmail,Long id, int stock) {
+    public Product addStock(String alertEmail,Long id, int stock) {
         // Find the product by ID
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
         // Update the stock level
-        product.setStockLevel(stock);
+        product.setStockLevel(product.getStockLevel()+stock);
+
+        // Save the updated product to the database
+        Product updatedProduct = productRepository.save(product);
+
+        // Notify observers (make sure subject is properly initialized)
+        if (subject != null) {
+            subject.notifyObservers(alertEmail,updatedProduct);
+        }
+
+        return updatedProduct; // Return the updated product
+    }
+    public Product removeStock(String alertEmail,Long id, int stock) {
+        // Find the product by ID
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        // Update the stock level
+        product.setStockLevel(product.getStockLevel()-stock);
 
         // Save the updated product to the database
         Product updatedProduct = productRepository.save(product);
