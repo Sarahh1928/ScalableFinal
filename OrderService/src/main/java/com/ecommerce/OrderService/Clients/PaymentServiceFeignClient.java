@@ -15,7 +15,7 @@ public interface PaymentServiceFeignClient {
             @RequestParam("method") PaymentMethodDTO method,
             @RequestParam("amount") double amount,
             @RequestBody(required = false) PaymentRequestDTO paymentRequest,
-            @RequestHeader("Authorization") String token
+            @RequestParam("token") String token
     );
 }
 

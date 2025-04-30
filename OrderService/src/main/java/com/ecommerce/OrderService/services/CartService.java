@@ -53,8 +53,8 @@ public class CartService {
         var product = productServiceFeignClient.getProductById(productId);
         if (product == null) {
             throw new RuntimeException("Product not found");
-        } else if (product.getStock() < quantity) {
-            throw new RuntimeException("Not Enough Stock");
+        } else if (product.getStockLevel() < quantity) {
+            throw new RuntimeException("Not Enough Stock"+product.getStockLevel() +"less than"+ quantity);
         }
         Long userId = session.getUserId();
         String email = session.getEmail();
