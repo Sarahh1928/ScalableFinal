@@ -17,6 +17,9 @@ public interface PaymentServiceFeignClient {
             @RequestBody(required = false) PaymentRequestDTO paymentRequest,
             @RequestParam("token") String token
     );
+
+    @PostMapping("/{id}/refund")
+    void refundPayment(@PathVariable Long id);
 }
 
 

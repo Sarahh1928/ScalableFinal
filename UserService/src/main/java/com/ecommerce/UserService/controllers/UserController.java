@@ -36,9 +36,8 @@ public class UserController {
     }
 
     @PostMapping("/deposit/{userId}")
-    public ResponseEntity<User> deposit(@RequestHeader("Authorization") String token, @PathVariable Long userId, @RequestBody Double amount) {
-        userService.deposit(extractToken(token), userId, amount);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+    public void deposit(@PathVariable Long userId, @RequestBody Double amount) {
+        userService.deposit( userId, amount);
     }
 
     @PostMapping("/deduct/{userId}")

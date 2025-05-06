@@ -1,4 +1,5 @@
 package com.ecommerce.PaymentService.services;
+import com.ecommerce.PaymentService.clients.UserServiceClient;
 import com.ecommerce.PaymentService.dto.UserSessionDTO;
 import com.ecommerce.PaymentService.models.OrderMessage;
 import com.ecommerce.PaymentService.models.Payment;
@@ -36,9 +37,13 @@ public class PaymentService {
     private PaymentStrategyFactory paymentStrategyFactory;
 
     @Autowired
-    public PaymentService(PaymentRepository paymentRepository, RedisTemplate<String, UserSessionDTO> sessionRedisTemplate) {
+    private UserServiceClient userServiceClient;
+
+    @Autowired
+    public PaymentService(PaymentRepository paymentRepository, RedisTemplate<String, UserSessionDTO> sessionRedisTemplate, UserServiceClient userServiceClient) {
         this.paymentRepository = paymentRepository;
         this.sessionRedisTemplate = sessionRedisTemplate;
+        this.userServiceClient = userServiceClient;
     }
 
     public String getToken(String token) {
@@ -144,17 +149,17 @@ public class PaymentService {
 
     // Additional Function: Refund payment
     @Transactional
-    public Payment refundPayment(Long paymentId) {
+    public void refundPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Payment not found"));
 
         if (payment.getStatus() != PaymentStatus.SUCCESSFUL) {
             throw new RuntimeException("Only successful payments can be refunded");
         }
+        userServiceClient.deposit(payment.getUserId(),payment.getAmount());
+        payment.setStatus(PaymentStatus.SUCCESSFUL);
+        paymentRepository.save(payment);
 
-        payment = paymentRepository.save(payment);
-
-        return payment;
     }
 
     // Additional Function: Cancel payment

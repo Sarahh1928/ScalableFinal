@@ -44,6 +44,7 @@ public class OrderService {
     private final EmailNotificationObserver emailNotificationObserver;
     private final CartService cartService;
     private final RefundRepository refundRepository;
+    private final ProductServiceFeignClient productServiceFeignClient;
     private final PaymentServiceFeignClient paymentServiceFeignClient;
 
     @Autowired
@@ -52,7 +53,7 @@ public class OrderService {
             @Qualifier("userSessionDTORedisTemplate") RedisTemplate<String, UserSessionDTO> sessionRedisTemplate,
             OrderRepository orderRepository, OrderStatusSubject orderStatusSubject,
             EmailNotificationObserver emailNotificationObserver, CartService cartService,
-            RefundRepository refundRepository, PaymentServiceFeignClient paymentServiceFeignClient) {
+            RefundRepository refundRepository, PaymentServiceFeignClient paymentServiceFeignClient, ProductServiceFeignClient productServiceFeignClient) {
         this.cartRedisTemplate = cartRedisTemplate;
         this.sessionRedisTemplate = sessionRedisTemplate;
         this.orderRepository = orderRepository;
@@ -61,12 +62,12 @@ public class OrderService {
         this.cartService = cartService;
         this.refundRepository = refundRepository;
         this.paymentServiceFeignClient = paymentServiceFeignClient;
+        this.productServiceFeignClient = productServiceFeignClient;
     }
 
     private UserSessionDTO getSession(String token) {
         UserSessionDTO session = sessionRedisTemplate.opsForValue().get(token);
         if (session == null) throw new RuntimeException("Session not found for token: " + token);
-        if (!ROLE_CUSTOMER.equalsIgnoreCase(session.getRole())) throw new RuntimeException("Unauthorized role");
         return session;
     }
 
@@ -78,13 +79,56 @@ public class OrderService {
 
     @Transactional
     public void checkoutOrder(String token, PaymentMethodDTO paymentMethod, PaymentRequestDTO paymentRequest) {
-
         UserSessionDTO userSessionDTO = getSession(token);
-        if (!userSessionDTO.getRole().equals(ROLE_CUSTOMER)) {
+        if (!"CUSTOMER".equals(userSessionDTO.getRole())) {
             throw new RuntimeException("Unauthorized role");
         }
+
         Cart cart = getCart(token);
-        paymentServiceFeignClient.createPayment(cart.getUserId(), userSessionDTO.getEmail(), paymentMethod, cart.getTotalPrice(), paymentRequest, token);
+
+        try {
+            for (CartItem item : cart.getItems().values()) {
+                productServiceFeignClient.removeStock(
+                        item.getProductId(),
+                        item.getQuantity(),
+                        "Bearer " + token // Include Bearer prefix
+                );
+            }
+
+            // If all stock updates succeed, proceed to payment
+            paymentServiceFeignClient.createPayment(
+                    cart.getUserId(),
+                    userSessionDTO.getEmail(),
+                    paymentMethod,
+                    cart.getTotalPrice(),
+                    paymentRequest,
+                    token
+            );
+
+        } catch (Exception ex) {
+            // If anything fails during stock removal or payment, rollback will happen due to @Transactional
+            throw new RuntimeException("Checkout failed: " + ex.getMessage(), ex);
+        }
+    }
+
+
+    public void returnStock(String token) {
+        UserSessionDTO userSessionDTO = getSession(token);
+        if (!"CUSTOMER".equals(userSessionDTO.getRole())) {
+            throw new RuntimeException("Unauthorized role");
+        }
+
+        Cart cart = getCart(token);
+
+        for (CartItem item : cart.getItems().values()) {
+            productServiceFeignClient.addStock(
+                    item.getProductId(),
+                    item.getQuantity(),
+                    "Bearer " + token // Include Bearer prefix
+            );
+        }
+
+
     }
 
     @Transactional
@@ -169,7 +213,6 @@ public class OrderService {
         switch (session.getRole().toUpperCase()) {
             case "MERCHANT":
                 return orderRepository.findByMerchantId(session.getUserId());
-
             case "CUSTOMER":
                 return orderRepository.findByUserId(session.getUserId());
 
@@ -280,10 +323,12 @@ public class OrderService {
             throw new IllegalStateException("Refund request not found for order: " + orderId);
         }
 
+
         // Fetch refund from DB
         RefundRequest request = refundRepository.findById(refundRequest.getId())
                 .orElseThrow(() -> new IllegalStateException("RefundRequest not found"));
 
+        paymentServiceFeignClient.refundPayment(order.getTransactionId());
         // Update status
         request.setStatus(RefundRequestStatus.ACCEPTED);
         refundRepository.save(request);

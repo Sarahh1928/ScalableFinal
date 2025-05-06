@@ -107,8 +107,8 @@ public class PaymentController {
 
     // Refund payment
     @PostMapping("/{id}/refund")
-    public ResponseEntity<Payment> refundPayment(@PathVariable Long id) {
-        return ResponseEntity.ok(paymentService.refundPayment(id));
+    public void refundPayment(@PathVariable Long id) {
+        paymentService.refundPayment(id);
     }
 
     // Cancel payment
