@@ -17,6 +17,12 @@ public interface UserServiceClient {
             @RequestBody Double amount
     );
 
+    @PostMapping("/deposit/{userId}")
+    void deposit(
+            @PathVariable Long userId,
+            @RequestBody Double amount
+    );
+
 
     @GetMapping("/{id}")
     UserDto getUser(@PathVariable("id") Long id, @RequestHeader("Authorization") String token);

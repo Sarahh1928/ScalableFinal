@@ -149,6 +149,11 @@ public class OrderController {
 
     @GetMapping("/track/{orderId}")
     public String trackOrder(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
-        return orderService.trackOrder(token, orderId);
+        return orderService.trackOrder(extractToken(token), orderId);
+    }
+
+    @PutMapping("/returnStock")
+    public void returnStock(@RequestHeader("Authorization") String token) {
+        orderService.returnStock(extractToken(token));
     }
 }
