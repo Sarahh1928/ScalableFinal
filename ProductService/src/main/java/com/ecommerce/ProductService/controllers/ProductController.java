@@ -158,7 +158,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}/removestock")
-    public Product removeStock(
+    public void removeStock(
             @PathVariable Long id,
             @RequestParam int stock,
             @RequestHeader("Authorization") String authorizationHeader) {
@@ -169,7 +169,6 @@ public class ProductController {
         if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
             throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
         }
-        Product product = productService.removeStock(userSession.getEmail(),id, stock);
-        return product;
+         productService.removeStock(userSession.getEmail(),id, stock);
     }
 }
