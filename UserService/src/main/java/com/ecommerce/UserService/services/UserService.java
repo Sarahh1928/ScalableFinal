@@ -285,9 +285,7 @@ public class UserService {
     }
 
     @Transactional
-    public void deposit(String token, Long userId, Double amount) {
-        getSessionOrThrow(token);
-
+    public void deposit(Long userId, Double amount) {
         CustomerProfile customer = (CustomerProfile) getUser(userId);
 
         customer.setWallet(customer.getWallet() + amount);

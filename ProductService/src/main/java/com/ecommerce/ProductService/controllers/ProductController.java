@@ -141,7 +141,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}/addstock")
-    public Product addStock(
+    public void addStock(
             @PathVariable Long id,
             @RequestParam int stock,
             @RequestHeader("Authorization") String authorizationHeader) {
@@ -153,8 +153,8 @@ public class ProductController {
 
             throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
         }
-        Product product = productService.addStock(userSession.getEmail(),id, stock);
-        return product;
+        productService.addStock(userSession.getEmail(),id, stock);
+
     }
 
     @PutMapping("/{id}/removestock")
