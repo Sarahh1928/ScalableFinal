@@ -211,12 +211,16 @@ public class ProductService {
 
         return updatedProduct; // Return the updated product
     }
-    public Product removeStock(String alertEmail,Long id, int stock) {
+    public void removeStock(String alertEmail,Long id, int stock) {
         // Find the product by ID
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
         // Update the stock level
+
+        if(product.getStockLevel()<stock){
+            throw new RuntimeException("Not Enoguh in stock");
+        }
         product.setStockLevel(product.getStockLevel()-stock);
 
         // Save the updated product to the database
@@ -227,7 +231,6 @@ public class ProductService {
             subject.notifyObservers(alertEmail,updatedProduct);
         }
 
-        return updatedProduct; // Return the updated product
     }
 
 }
