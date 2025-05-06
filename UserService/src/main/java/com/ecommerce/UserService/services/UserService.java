@@ -122,6 +122,10 @@ public class UserService {
             throw new IllegalArgumentException("Invalid credentials.");
         }
 
+        if(user.isBanned()){
+            throw new IllegalStateException("User is banned.");
+        }
+
         if (!user.getRole().equalsIgnoreCase("ADMIN") && !user.isEmailVerified()) {
             throw new IllegalStateException("Please verify your email before logging in.");
         }
