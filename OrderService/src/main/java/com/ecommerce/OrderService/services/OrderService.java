@@ -3,9 +3,7 @@ package com.ecommerce.OrderService.services;
 import com.ecommerce.OrderService.Clients.PaymentServiceFeignClient;
 import com.ecommerce.OrderService.Clients.ProductServiceFeignClient;
 import com.ecommerce.OrderService.Clients.UserServiceFeignClient;
-import com.ecommerce.OrderService.Dto.PaymentMethodDTO;
-import com.ecommerce.OrderService.Dto.PaymentRequestDTO;
-import com.ecommerce.OrderService.Dto.UserSessionDTO;
+import com.ecommerce.OrderService.Dto.*;
 import com.ecommerce.OrderService.models.Cart;
 import com.ecommerce.OrderService.models.CartItem;
 import com.ecommerce.OrderService.models.Order;
@@ -96,7 +94,7 @@ public class OrderService {
             }
 
             // If all stock updates succeed, proceed to payment
-            paymentServiceFeignClient.createPayment(
+            PaymentResponseDTO response = paymentServiceFeignClient.createPayment(
                     cart.getUserId(),
                     userSessionDTO.getEmail(),
                     paymentMethod,
@@ -104,6 +102,16 @@ public class OrderService {
                     paymentRequest,
                     token
             );
+            if(response.getStatus().equals(PaymentStatus.FAILED)){
+                for (CartItem item : cart.getItems().values()) {
+                    productServiceFeignClient.addStock(
+                            item.getProductId(),
+                            item.getQuantity(),
+                            "Bearer " + token // Include Bearer prefix
+                    );
+                }
+                throw new RuntimeException("Payment failed");
+            }
 
         } catch (Exception ex) {
             // If anything fails during stock removal or payment, rollback will happen due to @Transactional
@@ -127,8 +135,6 @@ public class OrderService {
                     "Bearer " + token // Include Bearer prefix
             );
         }
-
-
     }
 
     @Transactional
