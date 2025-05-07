@@ -103,50 +103,78 @@ public class ProductService {
         return productRepository.findByPriceBetween(min, max);
     }
 
-    public Product updateProduct(Long userId,String alertEmail,long uid, Product updatedProduct) {
+    public Product updateProduct(Long userId, String alertEmail, long uid, Product updatedProduct) {
         Product existingProduct = productRepository.findById(uid)
                 .orElseThrow(() -> new RuntimeException("Product not found with UID: " + uid));
-        if(existingProduct.getMerchantId()!=userId){
+
+        if (!existingProduct.getMerchantId().equals(userId)) {
             throw new RuntimeException("Only the owner of Product can update it");
         }
-        // Update common attributes
-        existingProduct.setCommonAttributes(
-                updatedProduct.getName(),
-                updatedProduct.getPrice(),
-                updatedProduct.getBrand(),
-                updatedProduct.getColor(),
-                updatedProduct.getMerchantId(),
-                updatedProduct.getStockLevel()
-        );
+
+        // Update common attributes if not null
+        if (updatedProduct.getName() != null) {
+            existingProduct.setName(updatedProduct.getName());
+        }
+        if (updatedProduct.getPrice() != 0.0) {
+            existingProduct.setPrice(updatedProduct.getPrice());
+        }
+        if (updatedProduct.getBrand() != null) {
+            existingProduct.setBrand(updatedProduct.getBrand());
+        }
+        if (updatedProduct.getColor() != null) {
+            existingProduct.setColor(updatedProduct.getColor());
+        }
+        if (updatedProduct.getMerchantId() != null) {
+            existingProduct.setMerchantId(updatedProduct.getMerchantId());
+        }
+        if (updatedProduct.getStockLevel() != 0) {
+            existingProduct.setStockLevel(updatedProduct.getStockLevel());
+        }
 
         // Handle specific attributes for different product types
         if (existingProduct instanceof Clothing && updatedProduct instanceof Clothing) {
             Clothing clothing = (Clothing) existingProduct;
             Clothing updatedClothing = (Clothing) updatedProduct;
-            clothing.setDetails(
-                    updatedClothing.getSize(),
-                    updatedClothing.getMaterial(),
-                    updatedClothing.getGender(),
-                    updatedClothing.getSeason()
-            );
+
+            if (updatedClothing.getSize() != null) {
+                clothing.setSize(updatedClothing.getSize());
+            }
+            if (updatedClothing.getMaterial() != null) {
+                clothing.setMaterial(updatedClothing.getMaterial());
+            }
+            if (updatedClothing.getGender() != null) {
+                clothing.setGender(updatedClothing.getGender());
+            }
+            if (updatedClothing.getSeason() != null) {
+                clothing.setSeason(updatedClothing.getSeason());
+            }
+
         } else if (existingProduct instanceof Accessory && updatedProduct instanceof Accessory) {
             Accessory accessory = (Accessory) existingProduct;
             Accessory updatedAccessory = (Accessory) updatedProduct;
-            accessory.setDetails(
-                    updatedAccessory.getType(),
-                    updatedAccessory.getMaterial(),
-                    updatedAccessory.isUnisex()
-            );
+
+            if (updatedAccessory.getType() != null) {
+                accessory.setType(updatedAccessory.getType());
+            }
+            if (updatedAccessory.getMaterial() != null) {
+                accessory.setMaterial(updatedAccessory.getMaterial());
+            }
+
+            // boolean can't be null — so we need a workaround
+            // Example: Assume `isUnisexSet()` is a custom method to know if the value is explicitly set
+            if (updatedAccessory.isUnisex() != accessory.isUnisex()) {
+                accessory.setUnisex(updatedAccessory.isUnisex());
+            }
         }
-        // Notify observers (make sure subject is properly initialized)
+
+        // Notify observers if subject is initialized
         if (subject != null) {
-            subject.notifyObservers(alertEmail,updatedProduct);
+            subject.notifyObservers(alertEmail, updatedProduct);
         }
 
-
-        // Save the updated product to the repository (DB)
         return productRepository.save(existingProduct);
     }
+
 
     public void deleteProduct(Long userId,Long id) {
         Product product=productRepository.findById(id).orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
