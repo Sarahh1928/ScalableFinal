@@ -152,8 +152,8 @@ public class OrderController {
         return orderService.trackOrder(extractToken(token), orderId);
     }
 
-    @PutMapping("/returnStock")
-    public void returnStock(@RequestHeader("Authorization") String token) {
-        orderService.returnStock(extractToken(token));
-    }
+//    @PutMapping("/returnStock")
+//    public void returnStock(@RequestHeader("Authorization") String token) {
+//        orderService.returnStock(extractToken(token));
+//    }
 }
