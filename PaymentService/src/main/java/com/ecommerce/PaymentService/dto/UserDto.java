@@ -4,6 +4,9 @@ public class UserDto {
     private Long id;
     private String username;
     private double wallet; // 🛑 required!
+    private String email;
+
+
 
     public UserDto() {}
 
@@ -29,5 +32,13 @@ public class UserDto {
 
     public void setWallet(double wallet) {
         this.wallet = wallet;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

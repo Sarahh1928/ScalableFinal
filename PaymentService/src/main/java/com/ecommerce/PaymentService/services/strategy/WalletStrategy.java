@@ -3,9 +3,11 @@ package com.ecommerce.PaymentService.services.strategy;
 import com.ecommerce.PaymentService.clients.UserServiceClient;
 import com.ecommerce.PaymentService.dto.UserDto;
 import com.ecommerce.PaymentService.dto.WalletUpdateRequest;
+import com.ecommerce.PaymentService.services.MailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 public class WalletStrategy implements PaymentStrategy {
 
@@ -16,7 +18,6 @@ public class WalletStrategy implements PaymentStrategy {
     private final String token; // Bearer token
     private double currentWalletBalance;
 
-    @Autowired
     public WalletStrategy( Long userId, String token,UserServiceClient userServiceClient) {
         this.userServiceClient = userServiceClient;
         this.userId = userId;
@@ -28,6 +29,7 @@ public class WalletStrategy implements PaymentStrategy {
     @Override
     public boolean processPayment(double amount) {
         logger.info("Starting processPayment with amount: {}", amount);
+        logger.info("Starting processPayment with token: {}", token);
 
         logger.info("Fetched user with wallet balance1111111111111: {}", userServiceClient.getUser(userId,"Bearer " + token));
         UserDto user = userServiceClient.getUser(userId,"Bearer " + token);

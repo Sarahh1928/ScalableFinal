@@ -1,5 +1,6 @@
 package com.ecommerce.PaymentService.services;
 import com.ecommerce.PaymentService.clients.UserServiceClient;
+import com.ecommerce.PaymentService.dto.UserDto;
 import com.ecommerce.PaymentService.dto.UserSessionDTO;
 import com.ecommerce.PaymentService.models.OrderMessage;
 import com.ecommerce.PaymentService.models.Payment;
@@ -26,6 +27,8 @@ import java.util.UUID;
 public class PaymentService {
     private final PaymentRepository paymentRepository;
 
+    @Autowired
+    private MailService mailService;
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
@@ -62,6 +65,7 @@ public class PaymentService {
     @Transactional
     public Payment processPayment(String token, Long userId, String customerEmail,
                                   PaymentMethod method, double amount, Object... paymentDetails) {
+        UserDto user = userServiceClient.getUser(userId, "Bearer " + token);
         Payment payment = new Payment();
         payment.setUserId(userId);
         payment.setCustomerEmail(customerEmail);
@@ -81,7 +85,31 @@ public class PaymentService {
             payment.setStatus(isSuccessful ? PaymentStatus.SUCCESSFUL : PaymentStatus.FAILED);
             payment.setTransactionId(UUID.randomUUID().toString());
 
+            if (payment.getStatus() == PaymentStatus.FAILED) {
+                mailService.sendEmail(user.getEmail(),
+                        "Payment Failed",
+                        "Dear Customer,\n\n"
+                                + "We regret to inform you that your payment of $" + amount + " could not be processed successfully.\n"
+                                + "Transaction ID: " + payment.getTransactionId() + "\n\n"
+                                + "Please ensure you have sufficient balance or try again later. If the issue persists, contact support.\n\n"
+                                + "Thank you,\n"
+                                + "E-commerce Support Team"
+
+                );
+            }
             if (isSuccessful) {
+                mailService.sendEmail(
+                        user.getEmail(),
+                        "Payment Successful",
+                        "Dear Customer,\n\n"
+                                + "Your payment of $" + amount + " has been successfully processed.\n"
+                                + "Transaction ID: " + payment.getTransactionId() + "\n\n"
+                                + "Thank you for your purchase! If you have any questions or need further assistance, feel free to contact our support team.\n\n"
+                                + "Best regards,\n"
+                                + "E-commerce Support Team"
+
+                );
+
                 OrderMessage message = new OrderMessage();
                 message.setToken(token);
                 message.setTransactionId(payment.getId());
