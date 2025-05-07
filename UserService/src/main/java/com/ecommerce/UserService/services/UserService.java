@@ -61,14 +61,11 @@ public class UserService {
     }
 
     // PASSWORD RESET
-    public void requestPasswordReset(String token, String email) {
+    public void requestPasswordReset(String username) {
 
-        User user = userRepository.findByEmail(email)
+
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("No user found with the provided email."));
-        UserSession session = getSessionOrThrow(token);
-        if (!user.getId().equals(session.getUserId())) {
-            throw new IllegalStateException("You are not to access this user info.");
-        }
         PasswordResetToken resetToken = new PasswordResetToken(
                 UUID.randomUUID().toString(),
                 user,
