@@ -51,9 +51,16 @@ public class ProductService {
 
     public Product createProduct(long merchantId,ProductCategory category, Map<String, Object> input) {
         try {
-            Product newProduct = ProductFactory.createProduct(category);
 
             // Common attributes
+
+            String name = (String) input.get("name");
+            // Check if product name already exists for this merchant
+            if (productRepository.existsByMerchantIdAndName(merchantId, name)) {
+                throw new IllegalArgumentException("Product with name '" + name + "' already exists for this merchant.");
+            }
+
+            Product newProduct = ProductFactory.createProduct(category);
             newProduct.setName((String) input.get("name"));
             newProduct.setPrice(Double.parseDouble(input.get("price").toString()));
             newProduct.setBrand((String) input.get("brand"));
