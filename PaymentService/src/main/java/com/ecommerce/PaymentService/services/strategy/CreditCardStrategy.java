@@ -24,7 +24,6 @@ public class CreditCardStrategy implements PaymentStrategy {
 
     @Override
     public boolean processPayment(double amount) {
-
         try {
             if (!isValidCardNumber(cardNumber) || !isValidExpiryDate(expiryDate) || !isValidCvv(cvv)) {
                 return false;
