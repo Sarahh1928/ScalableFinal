@@ -153,6 +153,10 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Payment not found"));
 
+
+        if (payment.getStatus() == PaymentStatus.REFUNDED) {
+            throw new RuntimeException("Payment has already been refunded");
+        }
         if (payment.getStatus() != PaymentStatus.SUCCESSFUL) {
             throw new RuntimeException("Only successful payments can be refunded");
         }
