@@ -225,13 +225,18 @@ public class OrderService {
     }
 
     public void cancelOrder(String token, Long orderId) {
-        UserSessionDTO userSessionDTO = getSession(token);
-        if (!userSessionDTO.getRole().equals(ROLE_MERCHANT) || !userSessionDTO.getRole().equals(ROLE_ADMIN)) {
-            throw new RuntimeException("You are not allowed to update this order");
-        }
         Order order = getOrderById(token, orderId);
         OrderCommandExecutor executor = new OrderCommandExecutor(Collections.singletonList(
                 new CancelOrderCommand(order, orderRepository)));
+
+        paymentServiceFeignClient.refundPayment(order.getTransactionId());
+        for (CartItem item : order.getOrderProducts()) {
+            productServiceFeignClient.addStock(
+                    item.getProductId(),
+                    item.getQuantity(),
+                    "Bearer " + token
+            );
+        }
         executor.executeCommands();
         updateOrderStatus(order);
     }

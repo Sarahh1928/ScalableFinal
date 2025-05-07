@@ -15,7 +15,7 @@ public class CancelOrderCommand extends OrderCommand {
 
     @Override
     public void execute() {
-        if(order.getStatus().equals(OrderStatus.CANCELLED) || order.getStatus().equals(OrderStatus.SHIPPED)) {
+        if(!order.getStatus().equals(OrderStatus.CONFIRMED)) {
             throw new RuntimeException("Order Can't Be Cancelled");
         }
         order.setStatus(OrderStatus.CANCELLED);
