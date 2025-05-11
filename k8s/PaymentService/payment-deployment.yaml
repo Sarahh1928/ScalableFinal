@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: yourdockerhub/payment-service:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://payment-db:5432/payment_db
+            - name: SPRING_DATASOURCE_USERNAME
+              value: payment
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: password
+            - name: REDIS_HOST
+              value: redis-cache

@@ -96,7 +96,6 @@ public class UserController {
         }
     }
 
-
     @GetMapping("/{id}")
     public ResponseEntity<User> getUser(@PathVariable Long id, @RequestHeader("Authorization") String authorizationHeader) {
         String token = extractToken(authorizationHeader);
