@@ -7,6 +7,5 @@ spec:
   selector:
     app: user-service
   ports:
-    - port: 8001
+    - port: 8080
       targetPort: 8080
-

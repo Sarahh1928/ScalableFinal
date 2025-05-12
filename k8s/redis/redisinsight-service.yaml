@@ -8,4 +8,3 @@ spec:
   ports:
     - port: 5540       # RedisInsight UI port
       targetPort: 5540
-  clusterIP: None      # Headless service for direct pod communication
