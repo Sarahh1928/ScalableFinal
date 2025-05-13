@@ -62,8 +62,6 @@ public class UserService {
 
     // PASSWORD RESET
     public void requestPasswordReset(String username) {
-
-
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("No user found with the provided email."));
         PasswordResetToken resetToken = new PasswordResetToken(
