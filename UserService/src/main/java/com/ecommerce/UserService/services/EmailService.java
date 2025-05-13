@@ -13,12 +13,15 @@ public class EmailService {
     @Value("${spring.mail.username}") // Get the email address from application.properties
     private String fromEmail;
 
+    @Value("${user.service.base-url}") // Get the email address from application.properties
+    private String baseUrl;
+
     public EmailService(JavaMailSender javaMailSender) {
         this.javaMailSender = javaMailSender;
     }
 
     public void sendPasswordResetEmail(String toEmail, String resetToken) {
-        String resetLink = "http://localhost:8001/users/reset?token=" + resetToken;
+        String resetLink = baseUrl+"/users/reset?token=" + resetToken;
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(toEmail);
@@ -27,7 +30,7 @@ public class EmailService {
         javaMailSender.send(message);
     }
     public void sendEmailVerification(String toEmail, String verificationToken) {
-        String verificationLink = "http://localhost:8001/users/verify-email?token=" + verificationToken;
+        String verificationLink = baseUrl+ "/users/verify-email?token=" + verificationToken;
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(toEmail);
