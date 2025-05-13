@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: postgres-user
+  name: postgres-product
 spec:
-  serviceName: "postgres-user"
+  serviceName: "postgres-product"
   replicas: 1
   selector:
     matchLabels:
-      app: postgres-user
+      app: postgres-product
   template:
     metadata:
       labels:
-        app: postgres-user
+        app: postgres-product
     spec:
       containers:
         - name: postgres
@@ -22,17 +22,17 @@ spec:
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: postgres-user-secret
+                  name: postgres-product-secret
                   key: POSTGRES_DB
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: postgres-user-secret
+                  name: postgres-product-secret
                   key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-user-secret
+                  name: postgres-product-secret
                   key: POSTGRES_PASSWORD
           volumeMounts:
             - name: postgres-persistent-storage

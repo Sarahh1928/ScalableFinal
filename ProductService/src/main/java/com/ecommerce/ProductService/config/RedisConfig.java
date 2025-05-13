@@ -1,14 +1,11 @@
 package com.ecommerce.ProductService.config;
 
 import com.ecommerce.ProductService.Dto.UserSessionDTO;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
@@ -21,40 +18,29 @@ import java.util.Map;
 @Configuration
 public class RedisConfig {
 
-    @Value("${spring.data.redis.host}")
-    private String redisHost;
-
-    @Value("${spring.data.redis.port}")
-    private int redisPort;
-
-    // 👇 This creates the actual Redis connection using your properties
-    @Bean
-    public RedisConnectionFactory redisConnectionFactory() {
-        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
-        config.setHostName(redisHost);
-        config.setPort(redisPort);
-        return new LettuceConnectionFactory(config);
-    }
-
-    // 👇 Your RedisTemplate bean (for doing CRUD ops in Redis easily)
+    // Define a RedisTemplate bean for managing Redis operations
     @Bean
     public RedisTemplate<String, UserSessionDTO> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, UserSessionDTO> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
 
+        // Use Jackson2JsonRedisSerializer for the value
         Jackson2JsonRedisSerializer<UserSessionDTO> serializer = new Jackson2JsonRedisSerializer<>(UserSessionDTO.class);
 
+        // Set the key serializer to StringRedisSerializer since keys are typically strings
         template.setKeySerializer(new StringRedisSerializer());
+
+        // Set value serializer to Jackson2JsonRedisSerializer for UserSession objects
         template.setValueSerializer(serializer);
 
         return template;
     }
 
-    // 👇 Your CacheManager bean (for Spring Cache abstraction)
+    // Define the cache manager bean
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofSeconds(90))
+                .entryTtl(Duration.ofSeconds(90)) // Default TTL for all caches
                 .disableCachingNullValues()
                 .serializeValuesWith(
                         RedisSerializationContext.SerializationPair.fromSerializer(

@@ -13,7 +13,7 @@ spec:
         app: redis-cache
     spec:
       containers:
-        - name: redis
+        - name: redis-cache
           image: redis
           ports:
             - containerPort: 6379

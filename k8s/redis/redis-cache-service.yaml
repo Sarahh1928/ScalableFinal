@@ -6,5 +6,5 @@ spec:
   selector:
     app: redis-cache
   ports:
-    - port: 6379      # Redis default port
+    - port: 6379
       targetPort: 6379

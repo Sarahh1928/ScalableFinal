@@ -1,5 +1,7 @@
 version: '3.8'
+
 services:
+
   user-service:
     build: ./userService
     ports:
@@ -8,10 +10,12 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user_db
       - SPRING_DATASOURCE_USERNAME=user
       - SPRING_DATASOURCE_PASSWORD=password
-      - REDIS_HOST=redis_cache
+      - REDIS_HOST=redis-cache
+      - USER_SERVICE_BASE_URL=http://localhost:8080
     depends_on:
       - user-db
-      - redis_cache
+      - redis-cache
+    restart: always
 
   user-db:
     image: postgres
@@ -19,6 +23,7 @@ services:
       - POSTGRES_DB=user_db
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
+    restart: always
 
   product-service:
     build: ./productService
@@ -29,11 +34,12 @@ services:
       - SPRING_DATASOURCE_USERNAME=product
       - SPRING_DATASOURCE_PASSWORD=password
       - MONGODB_URI=mongodb://product-review-db:27017/product_reviews
-      - REDIS_HOST=redis_cache
+      - REDIS_HOST=redis-cache
     depends_on:
       - product-db
       - product-review-db
-      - redis_cache
+      - redis-cache
+    restart: always
 
   product-db:
     image: postgres
@@ -41,9 +47,11 @@ services:
       - POSTGRES_DB=product_db
       - POSTGRES_USER=product
       - POSTGRES_PASSWORD=password
+    restart: always
 
   product-review-db:
     image: mongo
+    restart: always
 
   order-service:
     build: ./orderService
@@ -53,14 +61,15 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://order-db:5432/order_db
       - SPRING_DATASOURCE_USERNAME=order
       - SPRING_DATASOURCE_PASSWORD=password
-      - REDIS_HOST_ORDER_CACHE=orderCache  # Reference to the order_cache service
-      - REDIS_PORT_ORDER_CACHE=6379  # Default Redis port for order_cache
-      - REDIS_HOST_REDIS_CACHE=redisCache  # Reference to the redis_cache service
-      - REDIS_PORT_REDIS_CACHE=6379  # Default Redis port for redis_cache
+      - REDIS_HOST_ORDER_CACHE=order_cache
+      - REDIS_PORT_ORDER_CACHE=6379
+      - REDIS_HOST_redis-cache=redis-cache
+      - REDIS_PORT_redis-cache=6379
     depends_on:
       - order-db
       - order_cache
-      - redis_cache
+      - redis-cache
+    restart: always
 
   order-db:
     image: postgres
@@ -68,26 +77,25 @@ services:
       - POSTGRES_DB=order_db
       - POSTGRES_USER=order
       - POSTGRES_PASSWORD=password
+    restart: always
 
   order_cache:
     image: redis:latest
-    container_name: orderCache
     ports:
-      - "6380:6379"  # External port 6380 mapped to internal Redis port 6379
+      - "6380:6379"
+    restart: always
 
-  redis_cache:
+  redis-cache:
     image: redis:latest
-    container_name: redisCache
     ports:
-      - "6381:6379"  # External port 6381 mapped to internal Redis port 6379
+      - "6381:6379"
+    restart: always
 
   redisinsight:
     image: redis/redisinsight:latest
-    container_name: redisInsight
     ports:
       - "5540:5540"
     restart: always
-
 
   payment-service:
     build: ./paymentService
@@ -97,11 +105,12 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://payment-db:5432/payment_db
       - SPRING_DATASOURCE_USERNAME=payment
       - SPRING_DATASOURCE_PASSWORD=password
-      - REDIS_HOST=redis_cache
+      - REDIS_HOST=redis-cache
     depends_on:
       - payment-db
       - rabbitmq
-      - redis_cache
+      - redis-cache
+    restart: always
 
   payment-db:
     image: postgres
@@ -109,6 +118,7 @@ services:
       - POSTGRES_DB=payment_db
       - POSTGRES_USER=payment
       - POSTGRES_PASSWORD=password
+    restart: always
 
   rabbitmq:
     image: rabbitmq:4.0-management
@@ -116,8 +126,9 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    restart: always
 
   api-gateway:
     build: ./api-gateway
@@ -128,3 +139,4 @@ services:
       - product-service
       - order-service
       - payment-service
+    restart: always
