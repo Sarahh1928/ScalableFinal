@@ -12,7 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -32,89 +31,132 @@ public class PaymentController {
         }
         return null;  // If the header doesn't contain a Bearer token, return null
     }
+
     @GetMapping("/getToken")
-    public String logoutUser(@RequestHeader("Authorization") String token) {
-        String actualToken = extractToken(token);
-        return paymentService.getToken(actualToken);
+    public ResponseEntity<?> logoutUser(@RequestHeader("Authorization") String token) {
+        try {
+            String actualToken = extractToken(token);
+            String response = paymentService.getToken(actualToken);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error getting token: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Create payment
     @PostMapping
-    public ResponseEntity<Payment> createPayment(
+    public ResponseEntity<?> createPayment(
             @RequestParam Long userId,
             @RequestParam String customerEmail,
             @RequestParam PaymentMethod method,
             @RequestParam double amount,
             @RequestBody(required = false) PaymentRequest paymentRequest, // Make it optional
-            @RequestParam String token) { // Expect PaymentRequest here
+            @RequestParam String token) {
 
-        // Extract token from Authorization header
-//        String token = extractToken(authorizationHeader);
+        try {
+            // Get user session details from the token
+            UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
+            if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
+                return new ResponseEntity<>("Unauthorized: Invalid user session", HttpStatus.BAD_REQUEST);
+            }
 
-        // Get user session details from the token
-        UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
-        if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
-            throw new IllegalArgumentException("Invalid user session");
+            // Get the payment details array
+            String[] paymentDetails = paymentRequest != null ? paymentRequest.getPaymentDetails() : new String[0];
+
+            Payment payment = paymentService.processPayment(token, userId, customerEmail, method, amount, paymentDetails);
+            return ResponseEntity.status(HttpStatus.CREATED).body(payment);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error creating payment: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
-        // Get the payment details array
-        String[] paymentDetails = paymentRequest.getPaymentDetails();
-
-        Payment payment = paymentService.processPayment(token, userId, customerEmail, method, amount, paymentDetails);
-        return ResponseEntity.ok(payment);
     }
 
     // Get payment by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Payment> getPayment(@PathVariable Long id) {
-        Payment payment = paymentService.getPaymentById(id);
-        return payment != null ? ResponseEntity.ok(payment) : ResponseEntity.notFound().build();
+    public ResponseEntity<?> getPayment(@PathVariable Long id) {
+        try {
+            Payment payment = paymentService.getPaymentById(id);
+            return payment != null ? ResponseEntity.ok(payment) : new ResponseEntity<>("Payment not found", HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error retrieving payment: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Get user payments
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Payment>> getUserPayments(@PathVariable Long userId) {
-        List<Payment> payments = paymentService.getUserPayments(userId);
-        return ResponseEntity.ok(payments);
+    public ResponseEntity<?> getUserPayments(@PathVariable Long userId) {
+        try {
+            List<Payment> payments = paymentService.getUserPayments(userId);
+            return ResponseEntity.ok(payments);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error retrieving user payments: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Get payment history (admin)
     @GetMapping("/history")
-    public ResponseEntity<Page<Payment>> getPaymentHistory(Pageable pageable) {
-        return ResponseEntity.ok(paymentService.getPaymentHistory(pageable));
+    public ResponseEntity<?> getPaymentHistory(Pageable pageable) {
+        try {
+            Page<Payment> paymentHistory = paymentService.getPaymentHistory(pageable);
+            return ResponseEntity.ok(paymentHistory);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error retrieving payment history: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Get payments by status
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<Payment>> getPaymentsByStatus(@PathVariable PaymentStatus status) {
-        return ResponseEntity.ok(paymentService.getPaymentsByStatus(status));
+    public ResponseEntity<?> getPaymentsByStatus(@PathVariable PaymentStatus status) {
+        try {
+            List<Payment> payments = paymentService.getPaymentsByStatus(status);
+            return ResponseEntity.ok(payments);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error retrieving payments by status: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Update payment status
     @PutMapping("/{id}/status")
-    public ResponseEntity<Payment> updatePaymentStatus(
+    public ResponseEntity<?> updatePaymentStatus(
             @PathVariable Long id,
             @RequestParam PaymentStatus status) {
-
-        return ResponseEntity.ok(paymentService.updatePaymentStatus(id, status));
+        try {
+            Payment payment = paymentService.updatePaymentStatus(id, status);
+            return ResponseEntity.ok(payment);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error updating payment status: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Delete payment
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePayment(@PathVariable Long id) {
-        paymentService.deletePayment(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deletePayment(@PathVariable Long id) {
+        try {
+            paymentService.deletePayment(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error deleting payment: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Refund payment
     @PostMapping("/{id}/refund")
-    public void refundPayment(@PathVariable Long id) {
-        paymentService.refundPayment(id);
+    public ResponseEntity<?> refundPayment(@PathVariable Long id) {
+        try {
+            paymentService.refundPayment(id);
+            return ResponseEntity.ok("Refund processed successfully.");
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error refunding payment: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Cancel payment
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<Payment> cancelPayment(@PathVariable Long id) {
-        return ResponseEntity.ok(paymentService.cancelPayment(id));
+    public ResponseEntity<?> cancelPayment(@PathVariable Long id) {
+        try {
+            Payment canceledPayment = paymentService.cancelPayment(id);
+            return ResponseEntity.ok(canceledPayment);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error canceling payment: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 }
-

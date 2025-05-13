@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-
 @RestController
 @RequestMapping("/products")
 public class ProductController {
@@ -23,152 +22,198 @@ public class ProductController {
     }
 
     private boolean isMerchantUser(String token) {
-        // Assuming you decode the token to get user information
-        // You can implement this method to validate the user role from the token
-        UserSessionDTO userSession = productService.getUserSessionFromToken(token);  // You need to implement this method
+        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
         return userSession != null && "MERCHANT".equalsIgnoreCase(userSession.getRole());
     }
+
     private String extractToken(String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            return authorizationHeader.substring(7);  // Remove "Bearer " prefix
+            return authorizationHeader.substring(7);
         }
-        return null;  // If the header doesn't contain a Bearer token, return null
+        return null;
     }
-    // 📌 Add a new product (Factory pattern used internally)
+
     @PostMapping
     public ResponseEntity<?> addProduct(
             @RequestParam("category") ProductCategory category,
             @RequestBody Map<String, Object> product,
             @RequestHeader("Authorization") String authorizationHeader) {
 
-        // Extract token from Authorization header
-        String token = extractToken(authorizationHeader);
+        try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+            if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only merchants can add products.");
+            }
 
-        // Get user session details from the token
-        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
-        if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only merchants can add products."+userSession);
+            Product newProduct = productService.createProduct(userSession.getUserId(), category, product);
+            return ResponseEntity.status(HttpStatus.CREATED).body(newProduct);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
-
-        // Proceed to add product if the user is authorized
-        Product newProduct = productService.createProduct(userSession.getUserId(),category, product);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newProduct);
     }
 
-    // 📌 Get all products
     @GetMapping
-    public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+    public ResponseEntity<?> getAllProducts() {
+        try {
+            List<Product> products = productService.getAllProducts();
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
     }
 
     @GetMapping("/getToken")
-    public String logoutUser(@RequestHeader("Authorization") String token) {
-        String actualToken = extractToken(token);
-        return productService.getToken(actualToken);
+    public ResponseEntity<?> logoutUser(@RequestHeader("Authorization") String token) {
+        try {
+            String actualToken = extractToken(token);
+            String response = productService.getToken(actualToken);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
     }
 
-    // 📌 Filter by price range
     @GetMapping("/filter")
-    public List<Product> filterByPriceRange(
-            @RequestParam double min,
-            @RequestParam double max) {
-        return productService.filterProductsByPrice(min, max);
+    public ResponseEntity<?> filterByPriceRange(@RequestParam double min, @RequestParam double max) {
+        try {
+            List<Product> products = productService.filterProductsByPrice(min, max);
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
     }
 
-
-    // 📌 Update product
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(
+    public ResponseEntity<?> updateProduct(
             @PathVariable Long id,
             @RequestBody Product updatedProduct,
             @RequestHeader("Authorization") String authorizationHeader) {
-        String token = extractToken(authorizationHeader);
 
-        // Get user session details from the token
-        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
-        if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
-            throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
+        try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+            if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only merchants can update products.");
+            }
+
+            Product product = productService.updateProduct(userSession.getUserId(), userSession.getEmail(), id, updatedProduct);
+            return ResponseEntity.ok(product);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
-
-        Product product = productService.updateProduct(userSession.getUserId(),userSession.getEmail(),id, updatedProduct);
-        return ResponseEntity.ok(product);
     }
 
-    // 📌 Delete product
     @DeleteMapping("/{id}")
-    public void deleteProduct(@PathVariable Long id,
-                              @RequestHeader("Authorization") String authorizationHeader) {
-        String token = extractToken(authorizationHeader);
+    public ResponseEntity<?> deleteProduct(@PathVariable Long id,
+                                           @RequestHeader("Authorization") String authorizationHeader) {
+        try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+            if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only merchants can delete products.");
+            }
 
-        // Get user session details from the token
-        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
-        if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
-            throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
+            productService.deleteProduct(userSession.getUserId(), id);
+            return ResponseEntity.ok("Product deleted successfully.");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
-        productService.deleteProduct(userSession.getUserId(),id);
     }
 
-    // 📌 Get product by ID
     @GetMapping("/{id}")
-    public Product getProductById(@PathVariable Long id) {
-        return productService.getProductById(id);
+    public ResponseEntity<?> getProductById(@PathVariable Long id) {
+        try {
+            Product product = productService.getProductById(id);
+            return ResponseEntity.ok(product);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
     }
 
     @PostMapping("/{productId}/reviews")
-    public ProductReview addReview(
+    public ResponseEntity<?> addReview(
             @PathVariable Long productId,
             @RequestBody ProductReview review,
             @RequestHeader("Authorization") String authorizationHeader) {
-        // Extract token from Authorization header
-        String token = extractToken(authorizationHeader);
 
-        // Get user session details from the token
-        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
-        if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
-            throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
+        try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+            if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can add reviews.");
+            }
+
+            ProductReview createdReview = productService.addReview(productId, review);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdReview);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
-        return productService.addReview(productId, review);
     }
 
     @GetMapping("/{productId}/reviews")
-    public List<ProductReview> getReviews(@PathVariable Long productId) {
-        return productService.getReviews(productId);
+    public ResponseEntity<?> getReviews(@PathVariable Long productId) {
+        try {
+            List<ProductReview> reviews = productService.getReviews(productId);
+            return ResponseEntity.ok(reviews);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{productId}/average-rating")
-    public double getAverageRating(@PathVariable Long productId) {
-        return productService.getAverageRating(productId);
+    public ResponseEntity<?> getAverageRating(@PathVariable Long productId) {
+        try {
+            double avgRating = productService.getAverageRating(productId);
+            return ResponseEntity.ok(avgRating);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}/addstock")
-    public void addStock(
+    public ResponseEntity<?> addStock(
             @PathVariable Long id,
             @RequestParam int stock,
             @RequestHeader("Authorization") String authorizationHeader) {
-        String token = extractToken(authorizationHeader);
 
-        // Get user session details from the token
-        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
-        if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
+        try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+            if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only merchants can add stock.");
+            }
 
-            throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
+            productService.addStock(userSession.getEmail(), id, stock);
+            return ResponseEntity.ok("Stock added successfully.");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
-        productService.addStock(userSession.getEmail(),id, stock);
-
     }
 
     @PutMapping("/{id}/removestock")
-    public void removeStock(
+    public ResponseEntity<?> removeStock(
             @PathVariable Long id,
             @RequestParam int stock,
             @RequestHeader("Authorization") String authorizationHeader) {
-        String token = extractToken(authorizationHeader);
 
-        // Get user session details from the token
-        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
-        if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
-            throw new NullPointerException("Unauthorized: Only merchants can add products."+userSession);
+        try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = productService.getUserSessionFromToken(token);
+            if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only merchants can remove stock.");
+            }
+
+            productService.removeStock(userSession.getEmail(), id, stock);
+            return ResponseEntity.ok("Stock removed successfully.");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
-         productService.removeStock(userSession.getEmail(),id, stock);
     }
 }
