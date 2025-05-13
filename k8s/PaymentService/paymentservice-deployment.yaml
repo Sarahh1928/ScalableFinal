@@ -1,46 +1,52 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: product-service
+  name: payment-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: product-service
+      app: payment-service
   template:
     metadata:
       labels:
-        app: product-service
+        app: payment-service
     spec:
       containers:
-        - name: product-service
-          image: mennan0809/product-service:latest
+        - name: payment-service
+          image: mennan0809/payment-service:latest
           ports:
             - containerPort: 8080
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:postgresql://postgres-product-0.postgres-product:5432/product_db
+              value: jdbc:postgresql://postgres-payment-0.postgres-payment:5432/payment_db
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: postgres-product-secret
+                  name: postgres-payment-secret
                   key: POSTGRES_USER
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-product-secret
+                  name: postgres-payment-secret
                   key: POSTGRES_PASSWORD
-
             - name: SPRING_REDIS_HOST
               value: redis-cache
             - name: SPRING_REDIS_PORT
               value: "6379"
-            - name: SPRING_DATA_MONGODB_URI
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: mongo-secret
-                  key: URI
-            - name: SPRING_DATA_MONGODB_DATABASE
-              value: product_reviews
+                  name: rabbitmq-secret
+                  key: RABBITMQ_DEFAULT_USER
+            - name: SPRING_RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_DEFAULT_PASS

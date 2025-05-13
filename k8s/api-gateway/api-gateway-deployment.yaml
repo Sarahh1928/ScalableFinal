@@ -51,7 +51,7 @@ spec:
               value: Path=/payments/**
 
             - name: SPRING_CLOUD_GATEWAY_ROUTES_4_ID
-              value: cart-service
+              value: order-service
             - name: SPRING_CLOUD_GATEWAY_ROUTES_4_URI
               value: http://order-service:8080
             - name: SPRING_CLOUD_GATEWAY_ROUTES_4_PREDICATES_0

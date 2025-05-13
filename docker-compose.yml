@@ -35,6 +35,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
       - MONGODB_URI=mongodb://product-review-db:27017/product_reviews
       - REDIS_HOST=redis-cache
+      - SPRING_REDIS_PORT=6379
     depends_on:
       - product-db
       - product-review-db
@@ -61,13 +62,13 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://order-db:5432/order_db
       - SPRING_DATASOURCE_USERNAME=order
       - SPRING_DATASOURCE_PASSWORD=password
-      - REDIS_HOST_ORDER_CACHE=order_cache
-      - REDIS_PORT_ORDER_CACHE=6379
-      - REDIS_HOST_redis-cache=redis-cache
-      - REDIS_PORT_redis-cache=6379
+      - SPRING_REDIS_ORDER_HOST=order-cache
+      - SPRING_REDIS_ORDER_PORT=6379
+      - SPRING_REDIS_HOST=redis-cache
+      - SPRING_REDIS_PORT=6379
     depends_on:
       - order-db
-      - order_cache
+      - order-cache
       - redis-cache
     restart: always
 
@@ -79,7 +80,7 @@ services:
       - POSTGRES_PASSWORD=password
     restart: always
 
-  order_cache:
+  order-cache:
     image: redis:latest
     ports:
       - "6380:6379"
@@ -105,7 +106,8 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://payment-db:5432/payment_db
       - SPRING_DATASOURCE_USERNAME=payment
       - SPRING_DATASOURCE_PASSWORD=password
-      - REDIS_HOST=redis-cache
+      - SPRING_REDIS_HOST=redis-cache
+      - SPRING_REDIS_PORT=6379
     depends_on:
       - payment-db
       - rabbitmq
