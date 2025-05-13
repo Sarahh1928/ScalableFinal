@@ -5,9 +5,8 @@ import com.ecommerce.OrderService.models.Cart;
 import com.ecommerce.OrderService.services.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/carts")
@@ -26,46 +25,62 @@ public class CartController {
     }
 
     @GetMapping("/get")
-    public UserSessionDTO getSession(@RequestHeader("Authorization") String token) {
-        return cartService.getSession(extractToken(token));
+    public ResponseEntity<?> getSession(@RequestHeader("Authorization") String token) {
+        try {
+            UserSessionDTO session = cartService.getSession(extractToken(token));
+            return ResponseEntity.ok(session);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error retrieving session: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Add item to cart (using JWT token in header)
     @PostMapping("/add/{productId}")
-    public ResponseEntity<String> addItemToCart(
+    public ResponseEntity<?> addItemToCart(
             @RequestHeader("Authorization") String token,
             @PathVariable Long productId,
-            @RequestBody Integer quantity
-    ) {
-        cartService.addItemToCart(extractToken(token), productId, quantity);
-        return ResponseEntity.ok("Item added to cart");
+            @RequestBody Integer quantity) {
+        try {
+            cartService.addItemToCart(extractToken(token), productId, quantity);
+            return ResponseEntity.ok("Item added to cart");
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error adding item to cart: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
-
 
     // View cart (using JWT token in header)
     @GetMapping
-    public ResponseEntity<Cart> viewCart(@RequestHeader("Authorization") String token) {
-        Cart cart = cartService.viewCart(extractToken(token));
-        return ResponseEntity.ok(cart);
+    public ResponseEntity<?> viewCart(@RequestHeader("Authorization") String token) {
+        try {
+            Cart cart = cartService.viewCart(extractToken(token));
+            return ResponseEntity.ok(cart);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error viewing cart: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     // Remove item from cart (using JWT token in header)
     @DeleteMapping("/remove/{productId}")
-    public ResponseEntity<String> removeItemFromCart(
+    public ResponseEntity<?> removeItemFromCart(
             @RequestHeader("Authorization") String token,
             @PathVariable Long productId,
             @RequestBody(required = false) Integer quantity) {
-
-        cartService.removeItemFromCart(extractToken(token), productId, quantity);
-        return ResponseEntity.ok("Item removed from cart");
+        try {
+            cartService.removeItemFromCart(extractToken(token), productId, quantity);
+            return ResponseEntity.ok("Item removed from cart");
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error removing item from cart: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
-
-
 
     // Clear cart (using JWT token in header)
     @DeleteMapping("/clear")
-    public ResponseEntity<String> clearCart(@RequestHeader("Authorization") String token) {
-        cartService.clearCart(extractToken(token));
-        return ResponseEntity.ok("Cart cleared");
+    public ResponseEntity<?> clearCart(@RequestHeader("Authorization") String token) {
+        try {
+            cartService.clearCart(extractToken(token));
+            return ResponseEntity.ok("Cart cleared");
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error clearing cart: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 }
