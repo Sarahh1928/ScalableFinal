@@ -42,16 +42,16 @@ public class RedisConfig {
     // Redis connection factory for Redis Cache
     @Bean
     public RedisConnectionFactory redisCacheConnectionFactory() {
-        String redisHost = System.getenv("REDIS_HOST_REDIS_CACHE");
-        String redisPort = System.getenv("REDIS_PORT_REDIS_CACHE");
+        String redisHost = System.getenv("SPRING_REDIS_HOST");
+        String redisPort = System.getenv("SPRING_REDIS_PORT");
         return new LettuceConnectionFactory(redisHost, Integer.parseInt(redisPort));
     }
 
     // Redis connection factory for Order Cache
     @Bean
     public RedisConnectionFactory orderCacheConnectionFactory() {
-        String redisHost = System.getenv("REDIS_HOST_ORDER_CACHE");
-        String redisPort = System.getenv("REDIS_PORT_ORDER_CACHE");
+        String redisHost = System.getenv("SPRING_REDIS_ORDER_HOST");
+        String redisPort = System.getenv("SPRING_REDIS_ORDER_PORT");
         return new LettuceConnectionFactory(redisHost, Integer.parseInt(redisPort));
     }
 }
