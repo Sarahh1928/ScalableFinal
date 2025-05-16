@@ -4,6 +4,8 @@ import com.ecommerce.UserService.authUtilities.JwtUtil;
 import com.ecommerce.UserService.models.User;
 import com.ecommerce.UserService.models.UserSession;
 import com.ecommerce.UserService.models.enums.UserRole;
+import com.ecommerce.UserService.repositories.UserRepository;
+import com.ecommerce.UserService.services.UserSeederService;
 import com.ecommerce.UserService.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -20,6 +22,9 @@ public class UserController {
     private UserService userService;
 
     @Autowired
+    private UserSeederService userSeederService;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     // Helper method to extract the token from the Authorization header
@@ -33,6 +38,11 @@ public class UserController {
     // Helper method to validate the token
     private boolean isTokenValid(String token) {
         return token != null && userService.isTokenValid(token);
+    }
+
+    @GetMapping("/seed")
+    public String seedUsers() {
+        return userSeederService.seedUsers();
     }
 
     @PostMapping("/deposit/{userId}")

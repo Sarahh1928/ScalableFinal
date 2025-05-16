@@ -5,6 +5,7 @@ import com.ecommerce.PaymentService.models.Payment;
 import com.ecommerce.PaymentService.models.PaymentRequest;
 import com.ecommerce.PaymentService.models.enums.PaymentMethod;
 import com.ecommerce.PaymentService.models.enums.PaymentStatus;
+import com.ecommerce.PaymentService.services.PaymentSeederService;
 import com.ecommerce.PaymentService.services.PaymentService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,9 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @Autowired
+    private PaymentSeederService paymentSeederService;
+
+    @Autowired
     public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
     }
@@ -31,6 +35,20 @@ public class PaymentController {
         }
         return null;  // If the header doesn't contain a Bearer token, return null
     }
+    @GetMapping("/seed")
+    public ResponseEntity<String> seedPayment() {
+        try {
+            String result = paymentSeederService.seedPayments();
+            return ResponseEntity.ok(result);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("❌ Error seeding payments: " + e.getMessage());
+        }
+    }
+
+
 
     @GetMapping("/getToken")
     public ResponseEntity<?> logoutUser(@RequestHeader("Authorization") String token) {

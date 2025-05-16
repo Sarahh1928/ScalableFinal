@@ -84,12 +84,14 @@ services:
     image: redis:latest
     ports:
       - "6380:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
     restart: always
 
   redis-cache:
     image: redis:latest
     ports:
       - "6381:6379"
+    command: [ "redis-server", "--save", "", "--appendonly", "no" ]
     restart: always
 
   redisinsight:
