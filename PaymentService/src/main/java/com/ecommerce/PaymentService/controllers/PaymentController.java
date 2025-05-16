@@ -94,9 +94,15 @@ public class PaymentController {
 
     // Get payment history (admin)
     @GetMapping("/history")
-    public ResponseEntity<?> getPaymentHistory(Pageable pageable) {
+    public ResponseEntity<?> getPaymentHistory(Pageable pageable,
+                                               @RequestHeader("Authorization") String authorizationHeader) {
         try {
-            Page<Payment> paymentHistory = paymentService.getPaymentHistory(pageable);
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
+            if (userSession == null || "MERCHANT".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can add products.");
+            }
+            Page<Payment> paymentHistory = paymentService.getPaymentHistory(userSession.getRole(),userSession.getUserId(),pageable);
             return ResponseEntity.ok(paymentHistory);
         } catch (Exception e) {
             return new ResponseEntity<>("Error retrieving payment history: " + e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -105,9 +111,15 @@ public class PaymentController {
 
     // Get payments by status
     @GetMapping("/status/{status}")
-    public ResponseEntity<?> getPaymentsByStatus(@PathVariable PaymentStatus status) {
+    public ResponseEntity<?> getPaymentsByStatus(@PathVariable PaymentStatus status,
+                                                 @RequestHeader("Authorization") String authorizationHeader) {
         try {
-            List<Payment> payments = paymentService.getPaymentsByStatus(status);
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
+            if (userSession == null || "MERCHANT".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can add products.");
+            }
+            List<Payment> payments = paymentService.getPaymentsByStatus(userSession.getRole(),userSession.getUserId(),status);
             return ResponseEntity.ok(payments);
         } catch (Exception e) {
             return new ResponseEntity<>("Error retrieving payments by status: " + e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -118,8 +130,14 @@ public class PaymentController {
     @PutMapping("/{id}/status")
     public ResponseEntity<?> updatePaymentStatus(
             @PathVariable Long id,
-            @RequestParam PaymentStatus status) {
+            @RequestParam PaymentStatus status,
+            @RequestHeader("Authorization") String authorizationHeader) {
         try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
+            if (userSession == null || !"ADMIN".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can add products.");
+            }
             Payment payment = paymentService.updatePaymentStatus(id, status);
             return ResponseEntity.ok(payment);
         } catch (Exception e) {
@@ -129,8 +147,14 @@ public class PaymentController {
 
     // Delete payment
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deletePayment(@PathVariable Long id) {
+    public ResponseEntity<?> deletePayment(@PathVariable Long id,
+                                           @RequestHeader("Authorization") String authorizationHeader) {
         try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
+            if (userSession == null || "MERCHANT".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can add products.");
+            }
             paymentService.deletePayment(id);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
@@ -138,10 +162,15 @@ public class PaymentController {
         }
     }
 
-    // Refund payment
     @PostMapping("/{id}/refund")
-    public ResponseEntity<?> refundPayment(@PathVariable Long id) {
+    public ResponseEntity<?> refundPayment(@PathVariable Long id,
+                                           @RequestHeader("Authorization") String authorizationHeader) {
         try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
+            if (userSession == null || "CUSTOMER".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can add products.");
+            }
             paymentService.refundPayment(id);
             return ResponseEntity.ok("Refund processed successfully.");
         } catch (Exception e) {
@@ -149,10 +178,15 @@ public class PaymentController {
         }
     }
 
-    // Cancel payment
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<?> cancelPayment(@PathVariable Long id) {
+    public ResponseEntity<?> cancelPayment(@PathVariable Long id,
+                                           @RequestHeader("Authorization") String authorizationHeader) {
         try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
+            if (userSession == null || "MERCHANT".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can add products.");
+            }
             Payment canceledPayment = paymentService.cancelPayment(id);
             return ResponseEntity.ok(canceledPayment);
         } catch (Exception e) {

@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface ProductReviewRepository extends MongoRepository<ProductReview, String> {
     List<ProductReview> findByProductId(Long productId);
+    boolean existsByProductIdAndUserId(Long productId, Long userId);
+
 }

@@ -55,13 +55,11 @@ public class PaymentService {
         return userSession.toString();
     }
     public UserSessionDTO getUserSessionFromToken(String token) {
-        // Retrieve the user session from Redis using the provided token
         UserSessionDTO userSession=sessionRedisTemplate.opsForValue().get(token);
 
-        // Check if the session exists and if the user role is "merchant"
         return userSession;
     }
-    // Create: Initiate payment
+
     @Transactional
     public Payment processPayment(String token, Long userId, String customerEmail,
                                   PaymentMethod method, double amount, Object... paymentDetails) {
@@ -74,7 +72,6 @@ public class PaymentService {
         payment.setStatus(PaymentStatus.PENDING);
         payment.setTransactionDate(LocalDateTime.now());
 
-        // Save initially as PENDING
         payment = paymentRepository.save(payment);
 
         try {
@@ -126,27 +123,40 @@ public class PaymentService {
         }
     }
 
-    // Read: Get payment by ID
     public Payment getPaymentById(Long id) {
         return paymentRepository.findById(id).orElse(null);
     }
 
-    // Read: Get all payments for a user
     public List<Payment> getUserPayments(Long userId) {
         return paymentRepository.findByUserId(userId);
     }
 
-    // Read: Get payment history (admin)
-    public Page<Payment> getPaymentHistory(Pageable pageable) {
-        return paymentRepository.findAll(pageable);
+    public Page<Payment> getPaymentHistory(String userRole,Long userId,Pageable pageable) {
+        switch (userRole.toUpperCase()) {
+            case "ADMIN":
+                return paymentRepository.findAll(pageable);
+
+            case "CUSTOMER":
+                return paymentRepository.findByUserId(userId, pageable);
+
+            default:
+                throw new IllegalArgumentException("Invalid user role: " + userRole);
+        }
     }
 
-    // Read: Get payments by status
-    public List<Payment> getPaymentsByStatus(PaymentStatus status) {
-        return paymentRepository.findByStatus(status);
+    public List<Payment> getPaymentsByStatus(String userRole,Long userId,PaymentStatus status) {
+        switch (userRole.toUpperCase()) {
+        case "ADMIN":
+            return paymentRepository.findByStatus(status);
+
+        case "CUSTOMER":
+            return paymentRepository.findByUserIdAndStatus(userId, status);
+
+        default:
+            throw new IllegalArgumentException("Invalid user role: " + userRole);
+    }
     }
 
-    // Update: Update payment status
     @Transactional
     public Payment updatePaymentStatus(Long paymentId, PaymentStatus newStatus) {
         Payment payment = paymentRepository.findById(paymentId)
@@ -156,7 +166,6 @@ public class PaymentService {
         return paymentRepository.save(payment);
     }
 
-    // Delete: Remove payment from history (soft delete)
     @Transactional
     public void deletePayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
@@ -165,17 +174,6 @@ public class PaymentService {
         paymentRepository.delete(payment);
     }
 
-    public void processPayment(String token, Long transactionId) {
-        boolean paymentSuccess = true; // or false, based on your logic
-
-        OrderMessage message = new OrderMessage();
-        message.setToken(token);
-        message.setTransactionId(transactionId);
-
-        rabbitTemplate.convertAndSend(orderQueue, message);
-    }
-
-    // Additional Function: Refund payment
     @Transactional
     public void refundPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
@@ -194,7 +192,6 @@ public class PaymentService {
 
     }
 
-    // Additional Function: Cancel payment
     @Transactional
     public Payment cancelPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)

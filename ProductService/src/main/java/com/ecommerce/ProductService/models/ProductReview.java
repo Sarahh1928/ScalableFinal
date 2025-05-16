@@ -8,12 +8,12 @@ import java.util.List;
 
 @Document(collection = "product_reviews")
 public class ProductReview {
-    @Id
-    private String id;
-    private Long productId;
-    private List<String> reviews = new ArrayList<>(); // ✅
-    private List<Integer> ratings = new ArrayList<>();
-
+        @Id
+        private String id;
+        private Long productId;
+        private Long userId;
+        private String comment;
+        private Integer rating;
 
     public String getId() {
         return id;
@@ -31,19 +31,27 @@ public class ProductReview {
         this.productId = productId;
     }
 
-    public List<String> getReviews() {
-        return reviews;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setReviews(List<String> reviews) {
-        this.reviews = reviews;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
-    public List<Integer> getRatings() {
-        return ratings;
+    public String getComment() {
+        return comment;
     }
 
-    public void setRatings(List<Integer> ratings) {
-        this.ratings = ratings;
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
     }
 }
