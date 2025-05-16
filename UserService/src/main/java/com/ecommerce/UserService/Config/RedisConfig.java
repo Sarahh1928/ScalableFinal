@@ -24,19 +24,15 @@ public class RedisConfig {
         RedisTemplate<String, UserSession> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
 
-        // Use Jackson2JsonRedisSerializer for the value
         Jackson2JsonRedisSerializer<UserSession> serializer = new Jackson2JsonRedisSerializer<>(UserSession.class);
 
-        // Set the key serializer to StringRedisSerializer since keys are typically strings
         template.setKeySerializer(new StringRedisSerializer());
 
-        // Set value serializer to Jackson2JsonRedisSerializer for UserSession objects
         template.setValueSerializer(serializer);
 
         return template;
     }
 
-    // Define the cache manager bean
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()

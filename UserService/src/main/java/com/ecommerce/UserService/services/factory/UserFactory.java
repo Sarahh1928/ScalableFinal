@@ -11,18 +11,14 @@ public class UserFactory {
         ObjectMapper objectMapper = new ObjectMapper();
         return switch (role) {
             case CUSTOMER -> {
-                // Convert the userData to CustomerProfile
                 CustomerProfile customerProfile = objectMapper.convertValue(userData, CustomerProfile.class);
-                // Create and return the Customer
                 yield Customer.create(customerProfile);
             }
             case MERCHANT -> {
-                // Convert userData to MerchantProfile and create the Merchant
                 MerchantProfile merchantProfile = objectMapper.convertValue(userData, MerchantProfile.class);
                 yield Merchant.create(merchantProfile);
             }
             case ADMIN -> {
-                // Handle admin creation
                 AdminProfile admin = new AdminProfile();
                 User adminUser = (User) userData;  // cast userData to User
                 admin.setUsername(adminUser.getUsername());
@@ -34,4 +30,3 @@ public class UserFactory {
         };
     }
 }
-
