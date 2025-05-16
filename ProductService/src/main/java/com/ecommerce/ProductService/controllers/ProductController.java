@@ -21,11 +21,6 @@ public class ProductController {
         this.productService = productService;
     }
 
-    private boolean isMerchantUser(String token) {
-        UserSessionDTO userSession = productService.getUserSessionFromToken(token);
-        return userSession != null && "MERCHANT".equalsIgnoreCase(userSession.getRole());
-    }
-
     private String extractToken(String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7);
@@ -147,7 +142,7 @@ public class ProductController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can add reviews.");
             }
 
-            ProductReview createdReview = productService.addReview(productId, review);
+            ProductReview createdReview = productService.addReview(userSession.getUserId(),productId, review);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdReview);
 
         } catch (Exception e) {
@@ -184,8 +179,8 @@ public class ProductController {
         try {
             String token = extractToken(authorizationHeader);
             UserSessionDTO userSession = productService.getUserSessionFromToken(token);
-            if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only merchants can add stock.");
+            if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can add stock.");
             }
 
             productService.addStock(userSession.getEmail(), id, stock);
@@ -205,8 +200,8 @@ public class ProductController {
         try {
             String token = extractToken(authorizationHeader);
             UserSessionDTO userSession = productService.getUserSessionFromToken(token);
-            if (userSession == null || !"MERCHANT".equals(userSession.getRole())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only merchants can remove stock.");
+            if (userSession == null || !"CUSTOMER".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can remove stock.");
             }
 
             productService.removeStock(userSession.getEmail(), id, stock);
