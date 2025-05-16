@@ -315,7 +315,6 @@ public class OrderService {
         }
     }
 
-
     public void refundOrder(String token, Long orderId) {
         UserSessionDTO userSessionDTO = getSession(token);
         if (!userSessionDTO.getRole().equals(ROLE_MERCHANT)) {
@@ -348,7 +347,6 @@ public class OrderService {
         updateOrderStatus(order);
     }
 
-
     public void shipOrder(String token, Long orderId, Date deliveryDate) {
         UserSessionDTO userSessionDTO = getSession(token);
         if (!userSessionDTO.getRole().equals(ROLE_MERCHANT)) {
@@ -370,7 +368,7 @@ public class OrderService {
         }
         Order order = getOrderById(token, orderId);
         OrderCommandExecutor executor = new OrderCommandExecutor(Collections.singletonList(
-                new DeliverOrderCommand(order, orderRepository, emailNotificationObserver)));
+                new DeliverOrderCommand(order, orderRepository)));
         executor.executeCommands();
         order.setDeliveryDate(Date.valueOf(LocalDate.now()));
         orderRepository.save(order);
@@ -380,7 +378,6 @@ public class OrderService {
     public void updateOrderStatus(Order order) {
         orderStatusSubject.notifyObservers(order);
     }
-
     public String trackOrder(String token, Long orderId) {
         Order order = getOrderById(token, orderId);
         switch (order.getStatus()) {
@@ -398,4 +395,5 @@ public class OrderService {
             }
         }
     }
+
 }

@@ -26,7 +26,7 @@ public class OrderController {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7);  // Remove "Bearer " prefix
         }
-        return null;  // If the header doesn't contain a Bearer token, return null
+        return null;
     }
 
     @PostMapping("/checkoutOrder")

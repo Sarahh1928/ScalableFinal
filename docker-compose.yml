@@ -33,7 +33,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://product-db:5432/product_db
       - SPRING_DATASOURCE_USERNAME=product
       - SPRING_DATASOURCE_PASSWORD=password
-      - MONGODB_URI=mongodb://product-review-db:27017/product_reviews
+      - SPRING_DATA_MONGODB_URI=mongodb://product-review-db:27017/product_reviews
       - REDIS_HOST=redis-cache
       - SPRING_REDIS_PORT=6379
     depends_on:

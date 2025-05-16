@@ -15,8 +15,6 @@ public class CartController {
     @Autowired
     private CartService cartService;
 
-    private static final String USER_SESSION_CACHE_PREFIX = "user_session::";
-
     private String extractToken(String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7);  // Remove "Bearer " prefix
