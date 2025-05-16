@@ -57,12 +57,19 @@ public class ProductSeederService {
     }
 
     private void seedReview(Long productId) {
-        ProductReview review = new ProductReview();
-        review.setProductId(productId);
+        List<String> comments = List.of("Top quality.", "Perfect gift.");
+        List<Integer> ratings = List.of(5, 4);
+        Long userId = 1L;  // Or random userId if you want
 
-        review.setReviews(List.of("Top quality.", "Perfect gift."));
-        review.setRatings(List.of(5, 4));
+        for (int i = 0; i < comments.size(); i++) {
+            ProductReview review = new ProductReview();
+            review.setProductId(productId);
+            review.setUserId(userId + i);  // just to differ userId maybe
+            review.setComment(comments.get(i));
+            review.setRating(ratings.get(i));
 
-        reviewRepository.save(review);
+            reviewRepository.save(review);
+        }
     }
+
 }
