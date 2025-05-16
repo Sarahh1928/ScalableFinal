@@ -1,4 +1,4 @@
-//package com.ecommerce.api_gateway;
+package com.ecommerce.api_gateway;//package com.ecommerce.api_gateway;
 //
 //import org.junit.jupiter.api.Test;
 //import org.springframework.boot.test.context.SpringBootTest;

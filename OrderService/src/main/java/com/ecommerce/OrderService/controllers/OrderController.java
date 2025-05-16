@@ -4,6 +4,7 @@ import com.ecommerce.OrderService.Dto.PaymentMethodDTO;
 import com.ecommerce.OrderService.Dto.PaymentRequestDTO;
 import com.ecommerce.OrderService.models.Order;
 import com.ecommerce.OrderService.models.RefundRequest;
+import com.ecommerce.OrderService.services.OrderSeederService;
 import com.ecommerce.OrderService.services.OrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +17,23 @@ import java.util.List;
 @RequestMapping("/orders")
 public class OrderController {
     private final OrderService orderService;
+    private final OrderSeederService orderSeederService;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, OrderSeederService orderSeederService) {
         this.orderService = orderService;
+        this.orderSeederService = orderSeederService;
+    }
+    @GetMapping("/seed")
+    public ResponseEntity<String> seedOrders() {
+        try {
+            String result = orderSeederService.seedOrders();
+            return ResponseEntity.ok(result);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("❌ Error seeding orders: " + e.getMessage());
+        }
     }
 
     // Utility method to extract the token from the Authorization header
@@ -26,7 +41,7 @@ public class OrderController {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7);  // Remove "Bearer " prefix
         }
-        return null;  // If the header doesn't contain a Bearer token, return null
+        return null;
     }
 
     @PostMapping("/checkoutOrder")

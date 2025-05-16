@@ -71,7 +71,6 @@ public class Order {
 
     public void setOrderProducts(List<CartItem> orderProducts) {
         this.orderProducts = orderProducts;
-        // Recalculate total price and item count when the products are set
         calculateTotal();
     }
 
