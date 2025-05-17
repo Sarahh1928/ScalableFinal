@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,23 +29,45 @@ public class OrderSeederService {
         if (orderRepository.count() > 0) {
             return "⚠️ Orders already seeded.";
         }
-
         // Hardcoded cart items
-        CartItem ci1 = new CartItem(); ci1.setProductId(1L); ci1.setQuantity(1); ci1.setPrice(150.0); ci1.setMerchantId(4L);
-        CartItem ci2 = new CartItem(); ci2.setProductId(2L); ci2.setQuantity(2); ci2.setPrice(250.0); ci2.setMerchantId(4L);
+        CartItem ci1 = new CartItem();
+        ci1.setProductId(1L);
+        ci1.setQuantity(1);
+        ci1.setPrice(150.0);
+        ci1.setMerchantId(4L);
+        CartItem ci2 = new CartItem();
+        ci2.setProductId(2L);
+        ci2.setQuantity(2);
+        ci2.setPrice(250.0);
+        ci2.setMerchantId(4L);
 
-        CartItem ci3 = new CartItem(); ci3.setProductId(6L); ci3.setQuantity(1); ci3.setPrice(150.0); ci3.setMerchantId(5L);
-        CartItem ci4 = new CartItem(); ci4.setProductId(7L); ci4.setQuantity(2); ci4.setPrice(250.0); ci4.setMerchantId(5L);
+        CartItem ci3 = new CartItem();
+        ci3.setProductId(6L);
+        ci3.setQuantity(1);
+        ci3.setPrice(150.0);
+        ci3.setMerchantId(5L);
+        CartItem ci4 = new CartItem();
+        ci4.setProductId(7L);
+        ci4.setQuantity(2);
+        ci4.setPrice(250.0);
+        ci4.setMerchantId(5L);
 
-        CartItem ci5 = new CartItem(); ci5.setProductId(11L); ci5.setQuantity(1); ci5.setPrice(150.0); ci5.setMerchantId(6L);
-        CartItem ci6 = new CartItem(); ci6.setProductId(12L); ci6.setQuantity(2); ci6.setPrice(250.0); ci6.setMerchantId(6L);
+        CartItem ci5 = new CartItem();
+        ci5.setProductId(11L);
+        ci5.setQuantity(1);
+        ci5.setPrice(150.0);
+        ci5.setMerchantId(6L);
+        CartItem ci6 = new CartItem();
+        ci6.setProductId(12L);
+        ci6.setQuantity(2);
+        ci6.setPrice(250.0);
+        ci6.setMerchantId(6L);
 
-        // Hardcoded orders
         Order o1 = new Order();
         o1.setUserId(1L);
         o1.setUserEmail("scalifyteam@gmail.com");
         o1.setMerchantId(4L);
-        o1.setOrderProducts(List.of(ci1, ci2));
+        o1.setOrderProducts(new ArrayList<>(List.of(ci1, ci2)));
         o1.setStatus(OrderStatus.CANCELLED);
         o1.setTransactionId(2L);
 
@@ -52,7 +75,7 @@ public class OrderSeederService {
         o2.setUserId(1L);
         o2.setUserEmail("scalifyteam@gmail.com");
         o2.setMerchantId(5L);
-        o2.setOrderProducts(List.of(ci3, ci4));
+        o2.setOrderProducts(new ArrayList<>(List.of(ci3, ci4)));
         o2.setDeliveryDate(Date.valueOf(LocalDate.now().minusDays(9)));
         o2.setStatus(OrderStatus.REFUNDED);
         o2.setTransactionId(3L);
@@ -61,7 +84,7 @@ public class OrderSeederService {
         o3.setUserId(2L);
         o3.setUserEmail("scalifyteam@gmail.com");
         o3.setMerchantId(6L);
-        o3.setOrderProducts(List.of(ci5, ci6));
+        o3.setOrderProducts(new ArrayList<>(List.of(ci5, ci6)));
         o3.setStatus(OrderStatus.DELIVERED);
         o3.setTransactionId(5L);
         o3.setDeliveryDate(Date.valueOf(LocalDate.now().minusDays(2)));
@@ -70,7 +93,7 @@ public class OrderSeederService {
         o4.setUserId(3L);
         o4.setUserEmail("scalifyteam@gmail.com");
         o4.setMerchantId(4L);
-        o4.setOrderProducts(List.of(ci1, ci2));
+        o4.setOrderProducts(new ArrayList<>(List.of(ci1, ci2)));
         o4.setStatus(OrderStatus.SHIPPED);
         o4.setTransactionId(6L);
         o4.setDeliveryDate(Date.valueOf(LocalDate.now().plusDays(3)));
@@ -79,13 +102,13 @@ public class OrderSeederService {
         o5.setUserId(3L);
         o5.setUserEmail("scalifyteam@gmail.com");
         o5.setMerchantId(5L);
-        o5.setOrderProducts(List.of(ci3, ci4));
+        o5.setOrderProducts(new ArrayList<>(List.of(ci3, ci4)));
         o5.setStatus(OrderStatus.CONFIRMED);
         o5.setTransactionId(7L);
 
-        List<Order> savedOrders = orderRepository.saveAll(List.of(o1, o2, o3,o4, o5));
+        List<Order> savedOrders = orderRepository.saveAll(List.of(o1, o2, o3, o4, o5));
 
-        // Hardcoded refund requests for first 2 orders
+        System.out.println("🔁 Creating refund requests...");
         RefundRequest r1 = new RefundRequest();
         r1.setOrder(savedOrders.get(0));
         r1.setUserId(savedOrders.get(0).getUserId());
@@ -100,11 +123,12 @@ public class OrderSeederService {
 
         refundRequestRepository.saveAll(List.of(r1, r2));
 
-        // Link refund requests to orders and update
-        savedOrders.get(0).setRefundRequest(r1);
-        savedOrders.get(1).setRefundRequest(r2);
-        orderRepository.saveAll(savedOrders.subList(0, 2));
+        savedOrders.get(0).setRefundRequest(refundRequestRepository.findById(1L).get());
+        savedOrders.get(1).setRefundRequest(refundRequestRepository.findById(2L).get());
 
-        return "✅ Hardcoded orders and refunds seeded.";
+        orderRepository.save(savedOrders.get(0));
+        orderRepository.save(savedOrders.get(1));
+
+        return "✅ Orders and Refunds have been seeded.";
     }
 }

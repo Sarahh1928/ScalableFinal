@@ -14,8 +14,9 @@ public class RefundRequest {
 
     @OneToOne
     @JoinColumn(name = "order_id", referencedColumnName = "id")
-    @JsonIgnoreProperties("refundRequest")  // if you're serializing Order from here
+    @JsonIgnoreProperties("refundRequest")
     private Order order;
+
 
     private RefundRequestStatus status;  // Refund request status
 
