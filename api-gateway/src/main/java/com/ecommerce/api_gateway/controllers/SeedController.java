@@ -1,5 +1,6 @@
 package com.ecommerce.api_gateway.controllers;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -11,6 +12,18 @@ public class SeedController {
 
     private final WebClient webClient;
 
+    @Value("${services.user-service.url:http://user-service:8080}")
+    private String userServiceUrl;
+
+    @Value("${services.product-service.url:http://product-service:8080}")
+    private String productServiceUrl;
+
+    @Value("${services.payment-service.url:http://payment-service:8080}")
+    private String paymentServiceUrl;
+
+    @Value("${services.order-service.url:http://order-service:8080}")
+    private String orderServiceUrl;
+
     public SeedController(WebClient.Builder builder) {
         this.webClient = builder.build();
     }
@@ -18,30 +31,28 @@ public class SeedController {
     @GetMapping
     public Mono<String> seedAll() {
         Mono<String> users = webClient.get()
-                .uri("http://user-service:8080/users/seed")
+                .uri(userServiceUrl + "/users/seed")
                 .retrieve()
                 .bodyToMono(String.class)
                 .onErrorResume(e -> Mono.just("❌ User service failed: " + extractErrorMessage(e)));
 
         Mono<String> products = webClient.get()
-                .uri("http://product-service:8080/products/seed")
+                .uri(productServiceUrl + "/products/seed")
                 .retrieve()
                 .bodyToMono(String.class)
                 .onErrorResume(e -> Mono.just("❌ Product service failed: " + extractErrorMessage(e)));
 
         Mono<String> payments = webClient.get()
-                .uri("http://payment-service:8080/payments/seed")
+                .uri(paymentServiceUrl + "/payments/seed")
                 .retrieve()
                 .bodyToMono(String.class)
                 .onErrorResume(e -> Mono.just("❌ Payment service failed: " + extractErrorMessage(e)));
 
         Mono<String> orders = webClient.get()
-                .uri("http://order-service:8080/orders/seed")
+                .uri(orderServiceUrl + "/orders/seed")
                 .retrieve()
                 .bodyToMono(String.class)
                 .onErrorResume(e -> Mono.just("❌ Order service failed: " + extractErrorMessage(e)));
-
-
 
         return Mono.zip(users, orders, payments, products)
                 .map(results -> "💾 Seeding completed:\n" +

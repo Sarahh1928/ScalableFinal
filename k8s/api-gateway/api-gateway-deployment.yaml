@@ -18,6 +18,14 @@ spec:
           ports:
             - containerPort: 8080
           env:
+            - name: SERVICES_USER-SERVICE_URL
+              value: "http://user-service.default.svc.cluster.local:8080"
+            - name: SERVICES_PRODUCT-SERVICE_URL
+              value: "http://product-service.default.svc.cluster.local:8080"
+            - name: SERVICES_PAYMENT-SERVICE_URL
+              value: "http://payment-service.default.svc.cluster.local:8080"
+            - name: SERVICES_ORDER-SERVICE_URL
+              value: "http://order-service.default.svc.cluster.local:8080"
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
             - name: SPRING_MAIN_WEB_APPLICATION_TYPE
@@ -28,7 +36,6 @@ spec:
               value: http://user-service:8080
             - name: SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0
               value: Path=/users/**
-
             - name: SPRING_CLOUD_GATEWAY_ROUTES_1_ID
               value: product-service
             - name: SPRING_CLOUD_GATEWAY_ROUTES_1_URI
