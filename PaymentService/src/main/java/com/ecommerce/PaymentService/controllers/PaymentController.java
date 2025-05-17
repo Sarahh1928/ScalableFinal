@@ -90,8 +90,14 @@ public class PaymentController {
 
     // Get payment by ID
     @GetMapping("/{id}")
-    public ResponseEntity<?> getPayment(@PathVariable Long id) {
+    public ResponseEntity<?> getPayment(@PathVariable Long id,
+                                        @RequestHeader("Authorization") String authorizationHeader) {
         try {
+            String token = extractToken(authorizationHeader);
+            UserSessionDTO userSession = paymentService.getUserSessionFromToken(token);
+            if (userSession == null || "MERCHANT".equals(userSession.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized: Only customers can add products.");
+            }
             Payment payment = paymentService.getPaymentById(id);
             return payment != null ? ResponseEntity.ok(payment) : new ResponseEntity<>("Payment not found", HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
