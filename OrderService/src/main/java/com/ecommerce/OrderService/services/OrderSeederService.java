@@ -105,6 +105,6 @@ public class OrderSeederService {
         savedOrders.get(1).setRefundRequest(r2);
         orderRepository.saveAll(savedOrders.subList(0, 2));
 
-        return "✅ Hardcoded orders and refunds seeded.";
+        return "Hardcoded orders and refunds seeded.";
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Objects;
 
 @Service
@@ -70,7 +71,7 @@ public class CartService {
         cart.addItem(productId, quantity, product.getPrice(), product.getMerchantId());
 
         // Save the updated cart back to Redis
-        cartRedisTemplate.opsForValue().set(token, cart);
+        cartRedisTemplate.opsForValue().set(token, cart, Duration.ofHours(6));
     }
 
     public Cart viewCart(String token) {

@@ -7,6 +7,7 @@ import com.ecommerce.UserService.repositories.PasswordResetTokenRepository;
 import com.ecommerce.UserService.repositories.UserRepository;
 import com.ecommerce.UserService.services.factory.UserFactory;
 import com.ecommerce.UserService.services.singleton.SessionManager;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -15,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -73,6 +75,10 @@ public class UserService {
         emailService.sendPasswordResetEmail(user.getEmail(), resetToken.getToken());
     }
 
+    @PostConstruct
+    public void initSessionManager() {
+        SessionManager.getInstance().setRedisTemplate(redisTemplate);
+    }
 
     @Transactional
     public void resetPassword(String token, String newPassword) {
@@ -131,7 +137,7 @@ public class UserService {
 
         String token = jwtUtil.generateToken(user.getId(), user.getRole());
         UserSession session = new UserSession(token, user.getId(), user.getRole(), user.getEmail());
-        redisTemplate.opsForValue().set(token, session);
+
         SessionManager.getInstance().addSession(token, session);
 
         return token;
