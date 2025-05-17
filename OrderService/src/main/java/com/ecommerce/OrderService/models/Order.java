@@ -45,7 +45,7 @@ public class Order {
     @Column(nullable = true)
     private Long transactionId;
 
-    @OneToOne(mappedBy = "order")
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties("order")  // prevents serializing the back-reference
     private RefundRequest refundRequest;
     // Getters and Setters
