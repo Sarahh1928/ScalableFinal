@@ -29,9 +29,6 @@ public class OrderSeederService {
         if (orderRepository.count() > 0) {
             return "⚠️ Orders already seeded.";
         }
-
-        System.out.println("📦 Starting order and refund seeding...");
-
         // Hardcoded cart items
         CartItem ci1 = new CartItem();
         ci1.setProductId(1L);
@@ -66,8 +63,6 @@ public class OrderSeederService {
         ci6.setPrice(250.0);
         ci6.setMerchantId(6L);
 
-        // Orders
-        System.out.println("🔨 Building orders...");
         Order o1 = new Order();
         o1.setUserId(1L);
         o1.setUserEmail("scalifyteam@gmail.com");
