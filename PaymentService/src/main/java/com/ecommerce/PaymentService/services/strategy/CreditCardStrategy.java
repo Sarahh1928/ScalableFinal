@@ -24,6 +24,7 @@ public class CreditCardStrategy implements PaymentStrategy {
 
     @Override
     public boolean processPayment(double amount) {
+        Stripe.apiKey="sk_test_51RIuE7B1hAAEfUPLesi319NQR01TUBIp5YFUN8oB01AzEbgu1XpPOfZXWvhfP6gDVEXHYvJrCyG9jIX1emSnHC8100lAz3jNdA";
         try {
             if (!isValidCardNumber(cardNumber) || !isValidExpiryDate(expiryDate) || !isValidCvv(cvv)) {
                 return false;
