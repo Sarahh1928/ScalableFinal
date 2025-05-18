@@ -105,7 +105,7 @@ public class CartService {
                 }
             }
             // Save updated cart back to Redis
-            cartRedisTemplate.opsForValue().set(token, cart);
+            cartRedisTemplate.opsForValue().set(token, cart,  Duration.ofHours(6));
         } else {
             throw new RuntimeException("Cart not found for token: " + token);
         }
