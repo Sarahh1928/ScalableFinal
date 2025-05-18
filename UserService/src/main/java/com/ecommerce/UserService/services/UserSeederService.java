@@ -28,20 +28,20 @@ public class UserSeederService {
         Random rand = new Random();
 
         // === Customers ===
-        CustomerProfile cust1 = new CustomerProfile("Customer1", "customer1@gmail.com", "12345", "123 Customer St", "01000000001");
+        CustomerProfile cust1 = new CustomerProfile("Customer1", "scalifyteam@gmail.com", "12345", "123 Customer St", "01000000001");
         cust1.setWallet(10 + rand.nextDouble() * 990); // wallet 10-1000
-        CustomerProfile cust2 = new CustomerProfile("Customer2", "customer2@gmail.com", "12345", "456 Customer St", "01000000002");
+        CustomerProfile cust2 = new CustomerProfile("Customer2", "scalifyteam@gmail.com", "12345", "456 Customer St", "01000000002");
         cust2.setWallet(10 + rand.nextDouble() * 990);
-        CustomerProfile cust3 = new CustomerProfile("Customer3", "customer3@gmail.com", "12345", "789 Customer St", "01000000003");
+        CustomerProfile cust3 = new CustomerProfile("Customer3", "scalifyteam@gmail.com", "12345", "789 Customer St", "01000000003");
         cust3.setWallet(10 + rand.nextDouble() * 990);
 
         // === Merchants ===
-        MerchantProfile merch1 = new MerchantProfile("Merchant1", "merchant1@gmail.com", "12345", "Store One", "123 Merchant Ave");
-        MerchantProfile merch2 = new MerchantProfile("Merchant2", "merchant2@gmail.com", "12345", "Store Two", "456 Merchant Ave");
-        MerchantProfile merch3 = new MerchantProfile("Merchant3", "merchant3@gmail.com", "12345", "Store Three", "789 Merchant Ave");
+        MerchantProfile merch1 = new MerchantProfile("Merchant1", "scalifyteam@gmail.com", "12345", "Store One", "123 Merchant Ave");
+        MerchantProfile merch2 = new MerchantProfile("Merchant2", "scalifyteam@gmail.com", "12345", "Store Two", "456 Merchant Ave");
+        MerchantProfile merch3 = new MerchantProfile("Merchant3", "scalifyteam@gmail.com", "12345", "Store Three", "789 Merchant Ave");
 
         // === Admin ===
-        AdminProfile admin = new AdminProfile("admin", "admin@gmail.com", "admin");
+        AdminProfile admin = new AdminProfile("admin", "scalifyteam@gmail.com", "admin");
 
         // === Encode passwords + verify emails ===
         for (User user : new User[]{cust1, cust2, cust3, merch1, merch2, merch3, admin}) {

@@ -143,4 +143,9 @@ services:
       - product-service
       - order-service
       - payment-service
+    environment:
+      - services.user-service.url=http://user-service:8080
+      - services.product-service.url=http://product-service:8080
+      - services.payment-service.url=http://payment-service:8080
+      - services.order-service.url=http://order-service:8080
     restart: always

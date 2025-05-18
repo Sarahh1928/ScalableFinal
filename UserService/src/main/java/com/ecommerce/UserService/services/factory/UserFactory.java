@@ -18,14 +18,6 @@ public class UserFactory {
                 MerchantProfile merchantProfile = objectMapper.convertValue(userData, MerchantProfile.class);
                 yield Merchant.create(merchantProfile);
             }
-            case ADMIN -> {
-                AdminProfile admin = new AdminProfile();
-                User adminUser = (User) userData;  // cast userData to User
-                admin.setUsername(adminUser.getUsername());
-                admin.setEmail(adminUser.getEmail());
-                admin.setPassword(adminUser.getPassword());
-                yield admin;
-            }
             default -> throw new IllegalArgumentException("Unknown role: " + role);
         };
     }
