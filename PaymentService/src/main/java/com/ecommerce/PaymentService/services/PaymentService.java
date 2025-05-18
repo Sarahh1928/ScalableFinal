@@ -187,7 +187,7 @@ public class PaymentService {
             throw new RuntimeException("Only successful payments can be refunded");
         }
         userServiceClient.deposit(payment.getUserId(),payment.getAmount());
-        payment.setStatus(PaymentStatus.SUCCESSFUL);
+        payment.setStatus(PaymentStatus.REFUNDED);
         paymentRepository.save(payment);
 
     }
@@ -201,6 +201,7 @@ public class PaymentService {
             throw new RuntimeException("Only pending payments can be cancelled");
         }
 
+        payment.setStatus(PaymentStatus.CANCELLED);
         payment = paymentRepository.save(payment);
 
         return payment;

@@ -39,7 +39,7 @@ public class WalletStrategy implements PaymentStrategy {
 
         if (currentWalletBalance < amount) {
             logger.warn("Insufficient balance: {}, required: {}", currentWalletBalance, amount);
-            return false;
+            throw new RuntimeException("Insufficient balance: " + currentWalletBalance + " required: " + amount);
         }
 
         double newBalance = currentWalletBalance - amount;
